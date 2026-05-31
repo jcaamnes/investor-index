@@ -29,14 +29,25 @@ import base64
 import datetime as dt
 import json
 import os
+import ssl
 import sys
 import urllib.request
 
 import fetch_prices  # local Yahoo fetch (works from your residential IP)
 
+# Some Python installs (notably python.org builds on macOS) ship without the
+# system CA certificates wired up, so HTTPS verification fails with
+# "CERTIFICATE_VERIFY_FAILED". Use certifi's bundle when it's available — it's
+# already installed as a yfinance dependency — so verification just works.
+try:
+    import certifi
+    _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except Exception:
+    _SSL_CTX = ssl.create_default_context()
+
 
 def _get_json(url):
-    with urllib.request.urlopen(url, timeout=60) as resp:
+    with urllib.request.urlopen(url, timeout=60, context=_SSL_CTX) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
@@ -48,7 +59,7 @@ def _post_json(url, body, password):
         # The server checks the password only; any username works.
         token = base64.b64encode(f"admin:{password}".encode()).decode()
         req.add_header("Authorization", "Basic " + token)
-    with urllib.request.urlopen(req, timeout=180) as resp:
+    with urllib.request.urlopen(req, timeout=180, context=_SSL_CTX) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 

@@ -18,26 +18,19 @@ Prices are real-only. If a symbol can't be fetched we store nothing and keep
 the last known real close — we never fabricate data.
 
 Deploying behind a blocked IP: Yahoo refuses datacenter IPs (Render, AWS, ...),
-so a server fetch returns empty for every symbol. Set the YF_PROXY environment
-variable to a proxy whose IP Yahoo will serve and all requests route through it.
-Leave it unset on your own machine, where Yahoo works directly.
+so a server fetch returns empty for every symbol. The fix is push_prices.py —
+run it on your own machine (where Yahoo works) to fetch the closes and push them
+up to the live site's /api/prices endpoint.
 """
 
 import datetime as dt
 import math
-import os
 import time
 
 import db
 
 # Be polite between symbols so a 9-stock refresh doesn't burst all at once.
 _INTER_CALL_SLEEP_S = 0.6
-
-# Optional outbound proxy for Yahoo requests. Yahoo blocks datacenter IPs
-# (e.g. Render), so on a server set YF_PROXY to a proxy whose IP Yahoo will
-# serve — format: http://user:pass@host:port . Unset locally and everything
-# works directly as before.
-_PROXY = os.environ.get("YF_PROXY") or None
 
 
 def fetch_quotes(symbol, start, end):
@@ -64,7 +57,6 @@ def fetch_quotes(symbol, start, end):
         data = yf.download(
             symbol, start=start, end=end_plus,
             progress=False, auto_adjust=False, threads=False,
-            proxy=_PROXY,
         )
     except Exception as e:
         msg = str(e)
@@ -84,7 +76,6 @@ def fetch_quotes(symbol, start, end):
         try:
             hist = yf.Ticker(symbol).history(
                 start=start, end=end_plus, auto_adjust=False,
-                proxy=_PROXY,
             )
             out = _closes_from_frame(hist)
         except Exception as e:
