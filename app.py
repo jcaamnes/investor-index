@@ -235,6 +235,46 @@ def api_delete_position(pid):
     return jsonify({"ok": True})
 
 
+@app.post("/api/prices")
+@require_admin
+def api_ingest_prices():
+    """Ingest real closes fetched elsewhere (e.g. push_prices.py running on a
+    machine whose IP Yahoo will serve). Body:
+
+        {"prices": {"<yahoo_symbol>": [["2026-04-01", 12.3], ...], ...}}
+
+    Each symbol's stored history is replaced with the supplied closes. This is
+    the server-side half of the local-fetch-and-push workflow: the server never
+    calls Yahoo (its datacenter IP is blocked), it just stores what's pushed.
+    """
+    payload = request.get_json(force=True, silent=True) or {}
+    prices = payload.get("prices")
+    if not isinstance(prices, dict) or not prices:
+        abort(400, "expected {'prices': {symbol: [[date, close], ...]}}")
+
+    stored, skipped = {}, {}
+    for symbol, rows in prices.items():
+        sym = (symbol or "").strip().upper()
+        series = []
+        for row in rows or []:
+            try:
+                d = str(row[0])[:10]
+                c = float(row[1])
+            except (TypeError, ValueError, IndexError):
+                continue
+            if c == c:  # drop NaN
+                series.append((d, c))
+        if not sym or not series:
+            skipped[symbol] = "no valid rows"
+            continue
+        db.clear_prices(sym)
+        db.store_prices(sym, series)
+        stored[sym] = len(series)
+
+    return jsonify({"stored": stored, "skipped": skipped,
+                    "symbols": len(stored)})
+
+
 @app.post("/api/refresh")
 def api_refresh():
     qid = _resolve_quarter_id()
