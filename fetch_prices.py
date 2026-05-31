@@ -1,6 +1,6 @@
 """Price fetching for the Investor Index — Yahoo Finance via yfinance.
 
-This mirrors the simple, proven approach from the original 2025_Q4_stocks.py:
+The whole fetch is deliberately the plain yfinance call:
 
     data = yf.download(ticker, start=..., end=...)
     closes = data["Close"]

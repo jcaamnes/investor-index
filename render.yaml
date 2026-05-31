@@ -1,11 +1,16 @@
 # Render Blueprint for Investor Index.
-# In Render: New > Blueprint, point it at this repo. It creates a web service
-# (with a persistent disk so your data + photos survive deploys) and a daily
-# cron job that triggers the price refresh.
+# In Render: New > Blueprint, point it at this repo. It creates one web service
+# with a persistent disk so your data + photos survive deploys.
 #
 # After the first deploy: open a Shell on the web service and run
 #   python seed.py
-# once to load the Q2 2026 demo (or just start adding competitors in /admin).
+# once to load the Q2 2026 line-up (or just start adding competitors in /admin).
+#
+# PRICES: Yahoo Finance blocks datacenter IPs (Render, AWS, ...), so the server
+# can't fetch closes itself — every symbol would come back empty. Instead run
+# push_prices.py on your own machine (where Yahoo works) to fetch the closes and
+# POST them to this service's /api/prices endpoint. See DEPLOY.md for the cron
+# one-liner. That's why there is no Render cron job here.
 
 services:
   - type: web
@@ -22,24 +27,9 @@ services:
         value: /var/data/competition.db
       - key: INVESTOR_INDEX_PHOTOS
         value: /var/data/photos
-      - key: PYTHON_VERSION
+      - key: PYTHON_VERSION   # also pinned by .python-version (pandas needs a wheel)
         value: "3.11.9"
     disk:
       name: investor-index-data
       mountPath: /var/data
       sizeGB: 1
-
-  - type: cron
-    name: investor-index-refresh
-    runtime: python
-    plan: starter
-    schedule: "0 18 * * 1-5"  # 18:00 UTC, Mon–Fri (after the Oslo Børs close)
-    buildCommand: pip install -r requirements.txt
-    startCommand: python refresh_job.py
-    envVars:
-      # Points at the web service's public refresh endpoint. Replace the host
-      # with your service's real URL after the first deploy.
-      - key: REFRESH_URL
-        value: https://investor-index.onrender.com/api/refresh
-      - key: PYTHON_VERSION
-        value: "3.11.9"

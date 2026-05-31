@@ -260,6 +260,22 @@ def _canonical_quarter(label):
     return f"{year} {qtr.upper()}" if year and qtr else label
 
 
+# Some competitors have appeared under more than one name across the years
+# (the marathon history uses one, the current competition another). Collapse
+# those to a single canonical name so the Hall of Fame counts each person once.
+NAME_ALIASES = {
+    "Jan": "Jc",
+    "Magnus": "Årøen",
+    "Jakob": "Jack",
+    "Nesstrum": "Ness",
+}
+
+
+def _canon_name(name):
+    """Map a competitor name onto its canonical form (see NAME_ALIASES)."""
+    return NAME_ALIASES.get(name, name)
+
+
 def hall_of_fame():
     """Cross-quarter Hall of Fame.
 
@@ -275,9 +291,10 @@ def hall_of_fame():
     covered_quarters = set()
     if history:
         for h in history.get("standings", []):
+            nm = _canon_name(h["name"])
             entries = h.get("entries", 0) or 0
-            standings[h["name"]] = {
-                "name": h["name"], "photo": "", "color": "",
+            standings[nm] = {
+                "name": nm, "photo": "", "color": "",
                 "quarters": entries,
                 "wins": h.get("gold", 0),
                 "gold": h.get("gold", 0), "silver": h.get("silver", 0),
@@ -294,8 +311,10 @@ def hall_of_fame():
         covered_quarters = {_canonical_quarter(c["quarter"])
                             for c in history.get("champions", [])}
 
-    top_quarters = list(history.get("top_quarters", [])) if history else []
-    worst_quarters = list(history.get("worst_quarters", [])) if history else []
+    top_quarters = [dict(e, name=_canon_name(e.get("name")))
+                    for e in history.get("top_quarters", [])] if history else []
+    worst_quarters = [dict(e, name=_canon_name(e.get("name")))
+                      for e in history.get("worst_quarters", [])] if history else []
 
     best_quarter = top_quarters[0] if top_quarters else None
     worst_quarter = worst_quarters[0] if worst_quarters else None
@@ -315,8 +334,9 @@ def hall_of_fame():
         if not data or not data["competitors"]:
             continue
         for c in data["competitors"]:
-            s = standings.setdefault(c["name"], {
-                "name": c["name"], "photo": c["photo"], "color": c["color"],
+            cname = _canon_name(c["name"])
+            s = standings.setdefault(cname, {
+                "name": cname, "photo": c["photo"], "color": c["color"],
                 "quarters": 0, "wins": 0, "gold": 0, "silver": 0, "bronze": 0,
                 "podiums": 0, "podium_pct": None, "neg_quarters": 0,
                 "tot_return": None, "reinvest_5k": None,
@@ -344,7 +364,7 @@ def hall_of_fame():
             cur = s["worst"]
             s["worst"] = c["return_pct"] if cur is None else min(cur, c["return_pct"])
 
-            entry = {"name": c["name"], "ticker": c["ticker"],
+            entry = {"name": cname, "ticker": c["ticker"],
                      "quarter": _canonical_quarter(q["label"]),
                      "return_pct": c["return_pct"], "photo": c["photo"]}
             live_extra.append(entry)
@@ -371,7 +391,7 @@ def hall_of_fame():
     # Standings names seeded from history.json carry no photo, and live photos
     # only attach once a quarter completes. Map any current investor's photo by
     # name so an image added in the admin shows up immediately everywhere.
-    roster = {inv["name"]: inv for inv in db.list_investors()}
+    roster = {_canon_name(inv["name"]): inv for inv in db.list_investors()}
     for s in standings.values():
         inv = roster.get(s["name"])
         if inv:

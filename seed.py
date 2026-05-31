@@ -37,7 +37,7 @@ QUARTER = {
 #   JACK     -> UNCONFIRMED. "JACK" on Nasdaq is Jack in the Box (~$40), which
 #               doesn't match the 4.50 buy price — tell me Nichlas's real holding.
 COMPETITORS = [
-    ("Jan",     "The Oracle of Oslo",        "POET",   "POET",          5.67,    "#a855f7", "NOK"),
+    ("Jc",      "The Oracle of Oslo",        "POET",   "POET",          5.67,    "#a855f7", "NOK"),
     ("Nøkleby", "Slow and steady",           "KLP",    "0P00001BVT.IR", 1621.00, "#22d3ee", "NOK"),
     ("Årøen",   "Mobile-first money",        "MORROW", "MORROW.ST",     None,    "#3b82f6", "SEK"),
     ("Jack",    "Defence never sleeps",      "DFNC",   "DFNC.DE",       5.70,    "#ef4444", "NOK"),
