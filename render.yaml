@@ -1,0 +1,45 @@
+# Render Blueprint for Investor Index.
+# In Render: New > Blueprint, point it at this repo. It creates a web service
+# (with a persistent disk so your data + photos survive deploys) and a daily
+# cron job that triggers the price refresh.
+#
+# After the first deploy: open a Shell on the web service and run
+#   python seed.py
+# once to load the Q2 2026 demo (or just start adding competitors in /admin).
+
+services:
+  - type: web
+    name: investor-index
+    runtime: python
+    plan: starter            # persistent disks require a paid instance type
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /
+    envVars:
+      - key: ADMIN_PASSWORD   # set this in the Render dashboard (kept secret)
+        sync: false
+      - key: INVESTOR_INDEX_DB
+        value: /var/data/competition.db
+      - key: INVESTOR_INDEX_PHOTOS
+        value: /var/data/photos
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+    disk:
+      name: investor-index-data
+      mountPath: /var/data
+      sizeGB: 1
+
+  - type: cron
+    name: investor-index-refresh
+    runtime: python
+    plan: starter
+    schedule: "0 18 * * 1-5"  # 18:00 UTC, Mon–Fri (after the Oslo Børs close)
+    buildCommand: pip install -r requirements.txt
+    startCommand: python refresh_job.py
+    envVars:
+      # Points at the web service's public refresh endpoint. Replace the host
+      # with your service's real URL after the first deploy.
+      - key: REFRESH_URL
+        value: https://investor-index.onrender.com/api/refresh
+      - key: PYTHON_VERSION
+        value: "3.11.9"

@@ -1,0 +1,656 @@
+{
+  "source": "Stocks maratontabell.xlsx",
+  "coverage": {
+    "first_quarter": "2017 Q4",
+    "last_quarter": "2026 Q1",
+    "total_quarters": 34
+  },
+  "standings": [
+    {
+      "name": "Jan",
+      "entries": 28,
+      "gold": 8,
+      "silver": 4,
+      "bronze": 4,
+      "podiums": 16,
+      "podium_pct": 57.1,
+      "neg_quarters": 11,
+      "neg_ratio": 39.3,
+      "avg_return": 19.36,
+      "tot_return": 2467.1,
+      "reinvest_5k": 1042281
+    },
+    {
+      "name": "Henrik",
+      "entries": 31,
+      "gold": 5,
+      "silver": 7,
+      "bronze": 6,
+      "podiums": 18,
+      "podium_pct": 58.1,
+      "neg_quarters": 9,
+      "neg_ratio": 29.0,
+      "avg_return": 6.77,
+      "tot_return": -88.9,
+      "reinvest_5k": 83431
+    },
+    {
+      "name": "Tord",
+      "entries": 34,
+      "gold": 5,
+      "silver": 5,
+      "bronze": 2,
+      "podiums": 12,
+      "podium_pct": 35.3,
+      "neg_quarters": 15,
+      "neg_ratio": 44.1,
+      "avg_return": 14.41,
+      "tot_return": 38.0,
+      "reinvest_5k": 664134
+    },
+    {
+      "name": "Magnus",
+      "entries": 34,
+      "gold": 4,
+      "silver": 7,
+      "bronze": 5,
+      "podiums": 16,
+      "podium_pct": 47.1,
+      "neg_quarters": 16,
+      "neg_ratio": 47.1,
+      "avg_return": 5.48,
+      "tot_return": 147.9,
+      "reinvest_5k": 437733
+    },
+    {
+      "name": "Jakob",
+      "entries": 34,
+      "gold": 4,
+      "silver": 3,
+      "bronze": 5,
+      "podiums": 12,
+      "podium_pct": 35.3,
+      "neg_quarters": 16,
+      "neg_ratio": 47.1,
+      "avg_return": -0.2,
+      "tot_return": -76.7,
+      "reinvest_5k": 190660
+    },
+    {
+      "name": "Nesstrum",
+      "entries": 32,
+      "gold": 3,
+      "silver": 4,
+      "bronze": 2,
+      "podiums": 9,
+      "podium_pct": 28.1,
+      "neg_quarters": 16,
+      "neg_ratio": 50.0,
+      "avg_return": -2.44,
+      "tot_return": -85.0,
+      "reinvest_5k": 66824
+    },
+    {
+      "name": "Ole",
+      "entries": 16,
+      "gold": 2,
+      "silver": 2,
+      "bronze": 3,
+      "podiums": 7,
+      "podium_pct": 43.8,
+      "neg_quarters": 4,
+      "neg_ratio": 25.0,
+      "avg_return": 14.57,
+      "tot_return": 521.2,
+      "reinvest_5k": 476351
+    },
+    {
+      "name": "Nichlas",
+      "entries": 8,
+      "gold": 2,
+      "silver": 1,
+      "bronze": 0,
+      "podiums": 3,
+      "podium_pct": 37.5,
+      "neg_quarters": 2,
+      "neg_ratio": 25.0,
+      "avg_return": 9.58,
+      "tot_return": 88.8,
+      "reinvest_5k": 64483
+    },
+    {
+      "name": "Martin",
+      "entries": 23,
+      "gold": 1,
+      "silver": 0,
+      "bronze": 2,
+      "podiums": 3,
+      "podium_pct": 13.0,
+      "neg_quarters": 7,
+      "neg_ratio": 30.4,
+      "avg_return": 4.66,
+      "tot_return": 175.1,
+      "reinvest_5k": 201303
+    },
+    {
+      "name": "Tveit",
+      "entries": 3,
+      "gold": 0,
+      "silver": 1,
+      "bronze": 0,
+      "podiums": 1,
+      "podium_pct": 33.3,
+      "neg_quarters": 1,
+      "neg_ratio": 33.3,
+      "avg_return": -0.48,
+      "tot_return": -8.6,
+      "reinvest_5k": 11937
+    },
+    {
+      "name": "Nøkleby",
+      "entries": 19,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 2,
+      "podiums": 2,
+      "podium_pct": 10.5,
+      "neg_quarters": 12,
+      "neg_ratio": 63.2,
+      "avg_return": -12.47,
+      "tot_return": -95.6,
+      "reinvest_5k": 17868
+    },
+    {
+      "name": "Jostein",
+      "entries": 3,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 2,
+      "podiums": 2,
+      "podium_pct": 66.7,
+      "neg_quarters": 0,
+      "neg_ratio": 0,
+      "avg_return": 0.48,
+      "tot_return": -0.0,
+      "reinvest_5k": 15938
+    },
+    {
+      "name": "Patrick",
+      "entries": 8,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 1,
+      "podiums": 1,
+      "podium_pct": 12.5,
+      "neg_quarters": 3,
+      "neg_ratio": 37.5,
+      "avg_return": -4.15,
+      "tot_return": -40.6,
+      "reinvest_5k": 30415
+    },
+    {
+      "name": "Fredrik",
+      "entries": 6,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "podiums": 0,
+      "podium_pct": 0,
+      "neg_quarters": 1,
+      "neg_ratio": 16.7,
+      "avg_return": -3.64,
+      "tot_return": -27.4,
+      "reinvest_5k": 27197
+    }
+  ],
+  "champions": [
+    {
+      "quarter": "2017 Q4",
+      "gold": "Jakob",
+      "silver": "Tord",
+      "bronze": "Henrik"
+    },
+    {
+      "quarter": "2018 Q1",
+      "gold": "Magnus",
+      "silver": "Henrik",
+      "bronze": "Tord"
+    },
+    {
+      "quarter": "2018 Q2",
+      "gold": "Jan",
+      "silver": "Henrik",
+      "bronze": "Magnus"
+    },
+    {
+      "quarter": "2018 Q3",
+      "gold": "Henrik",
+      "silver": "Jan",
+      "bronze": "Jakob"
+    },
+    {
+      "quarter": "2018 Q4",
+      "gold": "Henrik",
+      "silver": "Magnus",
+      "bronze": "Jakob"
+    },
+    {
+      "quarter": "2019 Q1",
+      "gold": "Jan",
+      "silver": "Tord",
+      "bronze": "Nesstrum"
+    },
+    {
+      "quarter": "2019 Q2",
+      "gold": "Henrik",
+      "silver": "Jakob",
+      "bronze": "Magnus"
+    },
+    {
+      "quarter": "2019 Q3",
+      "gold": "Tord",
+      "silver": "Jakob",
+      "bronze": "Henrik"
+    },
+    {
+      "quarter": "2019 Q4",
+      "gold": "Magnus",
+      "silver": "Henrik",
+      "bronze": "Jakob"
+    },
+    {
+      "quarter": "2020 Q1",
+      "gold": "Nesstrum",
+      "silver": "Magnus",
+      "bronze": "Jan"
+    },
+    {
+      "quarter": "2020 Q2",
+      "gold": "Henrik",
+      "silver": "Nesstrum",
+      "bronze": "Magnus"
+    },
+    {
+      "quarter": "2020 Q3",
+      "gold": "Jakob",
+      "silver": "Nesstrum",
+      "bronze": "Jan"
+    },
+    {
+      "quarter": "2020 Q4",
+      "gold": "Henrik",
+      "silver": "Magnus",
+      "bronze": "Jan"
+    },
+    {
+      "quarter": "2021 Q1",
+      "gold": "Tord",
+      "silver": "Jan",
+      "bronze": "Patrick"
+    },
+    {
+      "quarter": "2021 Q2",
+      "gold": "Jan",
+      "silver": "Nesstrum",
+      "bronze": "Henrik"
+    },
+    {
+      "quarter": "2021 Q3",
+      "gold": "Jan",
+      "silver": "Tveit",
+      "bronze": "Nøkleby"
+    },
+    {
+      "quarter": "2021 Q4",
+      "gold": "Jan",
+      "silver": "Henrik",
+      "bronze": "Jostein"
+    },
+    {
+      "quarter": "2022 Q1",
+      "gold": "Nesstrum",
+      "silver": "Jakob",
+      "bronze": "Tord"
+    },
+    {
+      "quarter": "2022 Q2",
+      "gold": "Nesstrum",
+      "silver": "Henrik",
+      "bronze": "Jostein"
+    },
+    {
+      "quarter": "2022 Q3",
+      "gold": "Martin",
+      "silver": "Nesstrum",
+      "bronze": "Ole"
+    },
+    {
+      "quarter": "2022 Q4",
+      "gold": "Jakob",
+      "silver": "Magnus",
+      "bronze": "Ole"
+    },
+    {
+      "quarter": "2023 Q1",
+      "gold": "Jan",
+      "silver": "Tord",
+      "bronze": "Nesstrum"
+    },
+    {
+      "quarter": "2023 Q2",
+      "gold": "Jan",
+      "silver": "Magnus",
+      "bronze": "Martin"
+    },
+    {
+      "quarter": "2023 Q3",
+      "gold": "Magnus",
+      "silver": "Tord",
+      "bronze": "Henrik"
+    },
+    {
+      "quarter": "2023 Q4",
+      "gold": "Tord",
+      "silver": "Ole",
+      "bronze": "Nøkleby"
+    },
+    {
+      "quarter": "2024 Q1",
+      "gold": "Jakob",
+      "silver": "Tord",
+      "bronze": "Jan"
+    },
+    {
+      "quarter": "2024 Q2",
+      "gold": "Magnus",
+      "silver": "Henrik",
+      "bronze": "Jakob"
+    },
+    {
+      "quarter": "2024 Q3",
+      "gold": "Tord",
+      "silver": "Nichlas",
+      "bronze": "Martin"
+    },
+    {
+      "quarter": "2024 Q4",
+      "gold": "Tord",
+      "silver": "Jan",
+      "bronze": "Magnus"
+    },
+    {
+      "quarter": "2025 Q1",
+      "gold": "Jan",
+      "silver": "Henrik",
+      "bronze": "Ole"
+    },
+    {
+      "quarter": "2025 Q2",
+      "gold": "Ole",
+      "silver": "Magnus",
+      "bronze": "Henrik"
+    },
+    {
+      "quarter": "2025 Q3",
+      "gold": "Nichlas",
+      "silver": "Jan",
+      "bronze": "Magnus"
+    },
+    {
+      "quarter": "2025 Q4",
+      "gold": "Ole",
+      "silver": "Magnus",
+      "bronze": "Henrik"
+    },
+    {
+      "quarter": "2026 Q1",
+      "gold": "Nichlas",
+      "silver": "Ole",
+      "bronze": "Jakob"
+    }
+  ],
+  "top_quarters": [
+    {
+      "rank": 1,
+      "name": "Tord",
+      "quarter": "2023 Q3",
+      "return_pct": 327.36
+    },
+    {
+      "rank": 2,
+      "name": "Tord",
+      "quarter": "2021 Q1",
+      "return_pct": 163.1
+    },
+    {
+      "rank": 3,
+      "name": "Jan",
+      "quarter": "2021 Q1",
+      "return_pct": 155.8
+    },
+    {
+      "rank": 4,
+      "name": "Magnus",
+      "quarter": "2023 Q2",
+      "return_pct": 82.14
+    },
+    {
+      "rank": 5,
+      "name": "Ole",
+      "quarter": "2025 Q3",
+      "return_pct": 76.82
+    },
+    {
+      "rank": 6,
+      "name": "Jan",
+      "quarter": "2023 Q1",
+      "return_pct": 76.1
+    },
+    {
+      "rank": 7,
+      "name": "Henrik",
+      "quarter": "2020 Q4",
+      "return_pct": 76.0
+    },
+    {
+      "rank": 8,
+      "name": "Henrik",
+      "quarter": "2020 Q2",
+      "return_pct": 74.39
+    },
+    {
+      "rank": 9,
+      "name": "Jan",
+      "quarter": "2024 Q4",
+      "return_pct": 73.79
+    },
+    {
+      "rank": 10,
+      "name": "Jan",
+      "quarter": "2019 Q1",
+      "return_pct": 73.3
+    },
+    {
+      "rank": 11,
+      "name": "Jakob",
+      "quarter": "2024 Q1",
+      "return_pct": 65.37
+    },
+    {
+      "rank": 12,
+      "name": "Tord",
+      "quarter": "2024 Q3",
+      "return_pct": 62.04
+    },
+    {
+      "rank": 13,
+      "name": "Jan",
+      "quarter": "2021 Q2",
+      "return_pct": 58.8
+    },
+    {
+      "rank": 14,
+      "name": "Magnus",
+      "quarter": "2024 Q2",
+      "return_pct": 55.96
+    },
+    {
+      "rank": 15,
+      "name": "Jakob",
+      "quarter": "2020 Q3",
+      "return_pct": 56.2
+    },
+    {
+      "rank": 16,
+      "name": "Ole",
+      "quarter": "2024 Q4",
+      "return_pct": 66.07
+    },
+    {
+      "rank": 17,
+      "name": "Jan",
+      "quarter": "2024 Q3",
+      "return_pct": 51.4
+    },
+    {
+      "rank": 18,
+      "name": "Nesstrum",
+      "quarter": "2020 Q2",
+      "return_pct": 50.0
+    },
+    {
+      "rank": 19,
+      "name": "Tord",
+      "quarter": "2024 Q1",
+      "return_pct": 48.13
+    },
+    {
+      "rank": 20,
+      "name": "Nesstrum",
+      "quarter": "2021 Q2",
+      "return_pct": 42.0
+    }
+  ],
+  "worst_quarters": [
+    {
+      "rank": 1,
+      "name": "Henrik",
+      "quarter": "2022 Q3",
+      "return_pct": -98.77
+    },
+    {
+      "rank": 2,
+      "name": "Tord",
+      "quarter": "2020 Q1",
+      "return_pct": -76.9
+    },
+    {
+      "rank": 3,
+      "name": "Jakob",
+      "quarter": "2020 Q1",
+      "return_pct": -75.9
+    },
+    {
+      "rank": 4,
+      "name": "Tord",
+      "quarter": "2022 Q2",
+      "return_pct": -67.0
+    },
+    {
+      "rank": 5,
+      "name": "Nøkleby",
+      "quarter": "2024 Q1",
+      "return_pct": -57.62
+    },
+    {
+      "rank": 6,
+      "name": "Henrik",
+      "quarter": "2022 Q2",
+      "return_pct": -55.03
+    },
+    {
+      "rank": 7,
+      "name": "Nesstrum",
+      "quarter": "2024 Q1",
+      "return_pct": -53.33
+    },
+    {
+      "rank": 8,
+      "name": "Jan",
+      "quarter": "2019 Q4",
+      "return_pct": -49.6
+    },
+    {
+      "rank": 9,
+      "name": "Magnus",
+      "quarter": "2025 Q1",
+      "return_pct": -46.51
+    },
+    {
+      "rank": 10,
+      "name": "Patrick",
+      "quarter": "2019 Q4",
+      "return_pct": -45.3
+    },
+    {
+      "rank": 11,
+      "name": "Tord",
+      "quarter": "2018 Q4",
+      "return_pct": -46.0
+    },
+    {
+      "rank": 12,
+      "name": "Nesstrum",
+      "quarter": "2018 Q4",
+      "return_pct": -44.8
+    },
+    {
+      "rank": 13,
+      "name": "Nøkleby",
+      "quarter": "2025 Q2",
+      "return_pct": -44.03
+    },
+    {
+      "rank": 14,
+      "name": "Jakob",
+      "quarter": "2018 Q4",
+      "return_pct": -40.0
+    },
+    {
+      "rank": 15,
+      "name": "Tord",
+      "quarter": "2025 Q1",
+      "return_pct": -38.93
+    },
+    {
+      "rank": 16,
+      "name": "Jakob",
+      "quarter": "2021 Q3",
+      "return_pct": -38.71
+    },
+    {
+      "rank": 17,
+      "name": "Fredrik",
+      "quarter": "2024 Q1",
+      "return_pct": -37.8
+    },
+    {
+      "rank": 18,
+      "name": "Nesstrum",
+      "quarter": "2018 Q2",
+      "return_pct": -34.6
+    },
+    {
+      "rank": 19,
+      "name": "Nesstrum",
+      "quarter": "2025 Q3",
+      "return_pct": -34.65
+    },
+    {
+      "rank": 20,
+      "name": "Jan",
+      "quarter": "2021 Q4",
+      "return_pct": -31.9
+    }
+  ]
+}

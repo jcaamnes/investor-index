@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# App data (created at runtime — keep it out of git)
+data/*.db
+data/*.db-journal
+static/photos/*
+!static/photos/.gitkeep
+# but the Hall of Fame history IS part of the repo
+!data/history.json
+
+# OS
+.DS_Store
