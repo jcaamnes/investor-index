@@ -1,4 +1,4 @@
-"""Investor Index — desktop price updater (local web GUI).
+"""Stocks Elite — desktop price updater (local web GUI).
 
 Opens a little page in your browser with one button. Click "Update Prices" and
 it fetches today's Yahoo closes for the live site's active quarter (right here
@@ -60,7 +60,7 @@ app = Flask(__name__)
 PAGE = """<!DOCTYPE html>
 <html lang="en" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Investor Index — Price Updater</title>
+<title>Stocks Elite — Price Updater</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -245,7 +245,7 @@ def main():
     port = int(os.environ.get("GUI_PORT", _free_port()))
     url = f"http://127.0.0.1:{port}/"
     threading.Timer(0.8, lambda: webbrowser.open(url)).start()
-    print(f"Investor Index updater running at {url}  (Ctrl-C to quit)")
+    print(f"Stocks Elite updater running at {url}  (Ctrl-C to quit)")
     app.run(host="127.0.0.1", port=port, threaded=True)
 
 

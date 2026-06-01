@@ -1,4 +1,4 @@
-# Deploying Investor Index online (Render)
+# Deploying Stocks Elite online (Render)
 
 This puts your competition on a real always-on URL, with a password-protected
 admin area. Prices are kept fresh by a small script you run from your own
@@ -36,7 +36,7 @@ feed it real ones.
 cd "Stocks"
 git init
 git add .
-git commit -m "Investor Index"
+git commit -m "Stocks Elite"
 # create an empty repo on github.com, then:
 git remote add origin https://github.com/<you>/investor-index.git
 git push -u origin main

@@ -1,4 +1,4 @@
-"""Investor Index — a luxury stock-picking competition tracker.
+"""Stocks Elite — a luxury stock-picking competition tracker.
 
 Run:
     pip install -r requirements.txt
@@ -63,8 +63,8 @@ def require_admin(fn):
     def wrapper(*args, **kwargs):
         if not _authed():
             return Response(
-                "Investor Index — admin login required", 401,
-                {"WWW-Authenticate": 'Basic realm="Investor Index Admin"'})
+                "Stocks Elite — admin login required", 401,
+                {"WWW-Authenticate": 'Basic realm="Stocks Elite Admin"'})
         return fn(*args, **kwargs)
     return wrapper
 

@@ -1,4 +1,4 @@
-"""SQLite data layer for the Investor Index competition app.
+"""SQLite data layer for the Stocks Elite competition app.
 
 Tables
 ------

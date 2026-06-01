@@ -1,4 +1,4 @@
-"""Local price pusher for the Investor Index.
+"""Local price pusher for the Stocks Elite.
 
 Yahoo Finance blocks datacenter IPs (Render, AWS, ...), so the deployed server
 can't fetch prices itself. This script runs on YOUR machine — where Yahoo works
@@ -143,7 +143,7 @@ def _push_quarter(base, quarter, password):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Fetch prices locally and push to the live Investor Index.")
+    ap = argparse.ArgumentParser(description="Fetch prices locally and push to the live Stocks Elite.")
     ap.add_argument("--url", default=os.environ.get("PUSH_URL", ""),
                     help="Base URL of the live site, e.g. https://investor-index.onrender.com")
     ap.add_argument("--password", default=os.environ.get("ADMIN_PASSWORD", ""),

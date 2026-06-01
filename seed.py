@@ -1,4 +1,4 @@
-"""Seed the Q2 2026 competition from the original Investor Index screenshot.
+"""Seed the Q2 2026 competition from the original Stocks Elite screenshot.
 
 Idempotent: running twice won't duplicate (uses fixed labels + upserts).
 After inserting investors/positions it triggers a real-only price refresh from

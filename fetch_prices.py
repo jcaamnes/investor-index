@@ -1,4 +1,4 @@
-"""Price fetching for the Investor Index — Yahoo Finance via yfinance.
+"""Price fetching for the Stocks Elite — Yahoo Finance via yfinance.
 
 The whole fetch is deliberately the plain yfinance call:
 

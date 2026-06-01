@@ -1,4 +1,4 @@
-"""Analytics engine for the Investor Index.
+"""Analytics engine for the Stocks Elite.
 
 Given a quarter, reconstructs the full day-by-day performance and ranking
 timeline from cached price history and derives every leaderboard number, risk

@@ -1,4 +1,4 @@
-# Investor Index
+# Stocks Elite
 
 A luxury, dynamic web app for running a stock-picking competition between friends.
 Each quarter every competitor buys one ticker; the app tracks day-by-day

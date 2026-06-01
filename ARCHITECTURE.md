@@ -1,4 +1,4 @@
-# Investor Index — Architecture & How It Works
+# Stocks Elite — Architecture & How It Works
 
 A friendly-but-thorough tour of what's under the hood. Read this top to bottom
 to understand the whole system, or jump to a section. No prior knowledge of the
