@@ -13,5 +13,11 @@ static/photos/*
 # but the Hall of Fame history IS part of the repo
 !data/history.json
 
+# Local price-push helpers — contain the admin password, keep out of git
+push_now.command
+com.investorindex.pushprices.plist
+push.log
+push_config.json
+
 # OS
 .DS_Store
