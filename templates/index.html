@@ -144,10 +144,30 @@ table.board{width:100%;border-collapse:collapse}
 .qrow .qr-q{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
 .qrow .qr-val{margin-left:auto;font-family:var(--mono);font-weight:600}
 .foot{text-align:center;color:var(--text-faint);font-family:var(--mono);font-size:11px;letter-spacing:.12em;margin-top:40px}
+/* daily tip (shown as the epigraph) */
+.epigraph .ep-meta{font-family:var(--mono);font-style:normal;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);white-space:nowrap}
+/* dispatch expand */
+.dispatch-toggle{margin-top:6px;text-align:center}
+.dispatch-toggle .ctrl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.week.hidden{display:none}
+/* strategy */
+.strat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px}
+.strat{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:18px 20px;position:relative;overflow:hidden}
+.strat .strat-em{position:absolute;top:14px;right:16px;font-size:22px;opacity:.8}
+.strat h4{font-family:var(--serif);font-size:21px;font-weight:700;margin:0 0 8px;padding-right:30px}
+.strat p{font-size:14px;line-height:1.6;color:var(--text-dim);margin:0}
+.strat p b{color:var(--text);font-weight:600}
+.strat-note{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin:14px 2px 0;line-height:1.5;font-style:italic}
+/* rec card photo */
+.rec{display:flex;gap:14px;align-items:center}
+.rec .av-lg{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none;border:1px solid var(--border-strong);
+  background:var(--surface-3);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;color:var(--gold);font-weight:700}
+.rec .rec-text{flex:1;min-width:0}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c5c43;color:#fff;
   padding:12px 22px;border-radius:999px;font-size:14px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .3s;z-index:100}
 .toast.show{opacity:1}
-@media(max-width:880px){.hero{grid-template-columns:1fr}.week{grid-template-columns:1fr}.hof-grid{grid-template-columns:1fr}}
+@media(max-width:880px){.hero{grid-template-columns:1fr}.week{grid-template-columns:1fr}.hof-grid{grid-template-columns:1fr}.strat-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -162,7 +182,7 @@ table.board{width:100%;border-collapse:collapse}
 </div></header>
 
 <main class="wrap">
-  <p class="epigraph">Fortunes are made in the waiting.</p>
+  <p class="epigraph" id="epigraph">Fortunes are made in the waiting.</p>
   <section class="hero" id="hero"></section>
 
   <section class="panel">
@@ -188,6 +208,7 @@ table.board{width:100%;border-collapse:collapse}
   <section class="panel">
     <div class="phead"><h3>Weekly Dispatch</h3><span class="rule"></span><span class="note">newest first</span></div>
     <div id="weeks"></div>
+    <div class="dispatch-toggle" id="dispatchToggle" style="display:none"><button class="ctrl" id="dispatchBtn"></button></div>
   </section>
 
   <section class="panel">
@@ -204,6 +225,12 @@ table.board{width:100%;border-collapse:collapse}
       <div class="qlist"><div class="qhead">🚀 Top 10 Quarters</div><div id="hofTop"></div></div>
       <div class="qlist"><div class="qhead">💀 Worst 10 Quarters</div><div id="hofWorst"></div></div>
     </div>
+  </section>
+
+  <section class="panel" id="stratPanel">
+    <div class="phead"><h3>Strategy &amp; Reflections</h3><span class="rule"></span><span class="note">what the marathon teaches</span></div>
+    <div class="strat-grid" id="stratGrid"></div>
+    <p class="strat-note" id="stratNote"></p>
   </section>
 
   <p class="foot">INVESTOR INDEX · a gentlemen's wager · powered by Yahoo Finance</p>
@@ -411,10 +438,11 @@ function render(d){
     return`<div class="award"><span class="em">${e}</span><div class="ttl">${t}</div>
     <div class="who">${avatar(w.photo,w.name,"av-sm")}<span class="nm">${esc(w.name)}</span></div>
     <div class="val">${f(w.value)} <span class="tk">${esc(w.ticker)}</span></div><div class="desc">${desc}</div></div>`;}).join("");
-  // weeks
+  // weeks — newest first, only the latest shown by default
   const wk=d.summaries||[];
-  $("#weeks").innerHTML=wk.length?wk.map(w=>`<div class="week"><div><div class="wl">${esc(w.week_label)}</div><div class="dr">${esc(w.date_range)}</div></div><div class="body">${esc(w.narrative)}</div></div>`).join("")
+  $("#weeks").innerHTML=wk.length?wk.map((w,i)=>`<div class="week${i>0?" hidden":""}"><div><div class="wl">${esc(w.week_label)}</div><div class="dr">${esc(w.date_range)}</div></div><div class="body">${esc(w.narrative)}</div></div>`).join("")
     :`<div style="color:var(--text-dim);font-style:italic;font-family:var(--serif);font-size:18px;text-align:center;padding:30px">Summaries appear once a week of trading is in the books.</div>`;
+  setupDispatchToggle(wk.length);
   // hof — use the server's all-time payload when it's the new format
   // (it carries `coverage`); otherwise fall back to the baked-in marathon so a
   // stale server never collapses the Hall of Fame to a single quarter.
@@ -422,8 +450,18 @@ function render(d){
   const bq=h.best_quarter,wq=h.worst_quarter;
   if(h.coverage)$("#hofNote").textContent=h.coverage.first_quarter+" – "+h.coverage.last_quarter+" · "+h.coverage.total_quarters+" quarters";
   const recQ=(q,withTicker)=>q?esc(q.name)+" · "+(withTicker&&q.ticker?esc(q.ticker)+" · ":"")+esc(q.quarter):"";
-  $("#hofRecords").innerHTML=`<div class="rec"><div class="lab">🏆 Best Quarter Ever</div><div class="big">${bq?esc(bq.name)+" · "+fmtPct(bq.return_pct):"—"}</div><div class="m2">${recQ(bq,true)}</div></div>
-    <div class="rec"><div class="lab">🥶 Worst Quarter Ever</div><div class="big">${wq?esc(wq.name)+" · "+fmtPct(wq.return_pct):"—"}</div><div class="m2">${recQ(wq,true)}</div></div>`;
+  // all-time superlatives drawn from the standings table
+  const st=h.standings||[];
+  const mostPod=st.reduce((a,b)=>(b.podiums||0)>((a&&a.podiums)||-1)?b:a,null);
+  const elig=st.filter(s=>(s.quarters||0)>=4);   // need a few quarters to count
+  const biggestLoser=(elig.length?elig:st).reduce((a,b)=>(b.avg!=null&&(a==null||b.avg<a.avg))?b:a,null);
+  const recCard=(lab,photo,name,big,sub,bigCls)=>`<div class="rec">${avatar(photo,name,"av-lg")}<div class="rec-text">
+    <div class="lab">${lab}</div><div class="big ${bigCls||""}">${big}</div><div class="m2">${sub}</div></div></div>`;
+  $("#hofRecords").innerHTML=
+    recCard("🏆 Best Quarter Ever",bq&&bq.photo,bq&&bq.name,bq?esc(bq.name)+" · "+fmtPct(bq.return_pct):"—",recQ(bq,true))+
+    recCard("🥶 Worst Quarter Ever",wq&&wq.photo,wq&&wq.name,wq?esc(wq.name)+" · "+fmtPct(wq.return_pct):"—",recQ(wq,true))+
+    recCard("👑 Most Podiums",mostPod&&mostPod.photo,mostPod&&mostPod.name,mostPod?esc(mostPod.name)+" · "+mostPod.podiums:"—",mostPod?(mostPod.gold||0)+"🥇 "+(mostPod.silver||0)+"🥈 "+(mostPod.bronze||0)+"🥉 over "+mostPod.quarters+" quarters":"")+
+    recCard("🐌 Biggest Loser of All Time",biggestLoser&&biggestLoser.photo,biggestLoser&&biggestLoser.name,biggestLoser?esc(biggestLoser.name)+" · "+fmtPct(biggestLoser.avg):"—",biggestLoser?"worst avg return · "+biggestLoser.quarters+" quarters played":"","neg");
   const money=v=>v==null?"—":Math.round(v).toLocaleString("en-US");
   $("#hofBody").innerHTML=(h.standings||[]).map(s=>`<tr><td class="l"><div class="player">${avatar(s.photo,s.name,"av-sm")}<div class="nm">${esc(s.name)}</div></div></td>
     <td>${s.quarters}</td><td>${s.gold||0}</td><td>${s.silver||0}</td><td>${s.bronze||0}</td><td>${s.podiums}</td>
@@ -549,8 +587,74 @@ async function showQuarter(qid,push){
   if(push&&realId!=null){const url=new URL(location);url.searchParams.set("quarter_id",realId);history.pushState({qid:realId},"",url);}
 }
 
+/* ---------- daily tip (rotates by date) ---------- */
+const TIPS=[
+  ["⏳","Time in the market beats timing the market. The biggest gains tend to cluster in a handful of days you can't predict — so staying invested usually beats darting in and out.","Compounding"],
+  ["🪤","Avoiding a big loss matters more than chasing a big win. A −50% quarter needs a +100% one just to break even. Protect the downside and the upside takes care of itself.","Risk first"],
+  ["🎯","Concentration builds fortunes; diversification protects them. One conviction pick can win the quarter — but it can also lose it. Size the bet to the regret you can stomach.","Position sizing"],
+  ["🧊","The market can stay irrational longer than you can stay solvent. Don't average down into a thesis that's broken just because the chart looks cheap.","Discipline"],
+  ["📉","A falling knife has no handle. 'It can't go lower' is the most expensive sentence in investing — down 50% can always become down 80%.","Drawdowns"],
+  ["🪙","Cheap can get cheaper and expensive can get more expensive. Price tells you sentiment, not value. Know which one you're betting on.","Valuation"],
+  ["🔁","Your edge is a repeatable process, not a lucky pick. Write down why you bought — then judge yourself on the reasoning, not the outcome.","Process"],
+  ["🧠","Be greedy when others are fearful. The best entry points feel the worst; the most comfortable buys are usually the most crowded.","Contrarian"],
+  ["🌊","Volatility is the price of admission, not a malfunction. If you can't sit through a −30% drawdown, you were never really long.","Temperament"],
+  ["🧾","Know what you own and why you own it. If you can't explain the bet in two sentences, you don't have a thesis — you have a hope.","Conviction"],
+  ["✂️","Cut losers, let winners run. The hardest trade is selling something that's down; the second hardest is holding something that's up.","Selling"],
+  ["🐢","Boring compounding beats heroic gambling over a 34-quarter marathon. The leaderboard rewards the player who's still standing.","Endurance"],
+  ["🎲","Don't confuse a bull market with brains. When everything goes up, the real test is what you keep when it turns.","Humility"],
+  ["📊","Returns are what you earn; risk-adjusted returns are what you keep. A smooth +15% can beat a wild +40% once the blow-up arrives.","Sharpe"],
+];
+function renderDailyTip(){
+  const ep=$("#epigraph");if(!ep)return;
+  const now=new Date();
+  const doy=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);
+  const [em,quote,meta]=TIPS[doy%TIPS.length];
+  ep.innerHTML=`${em} ${esc(quote)} <span class="ep-meta">— ${esc(meta)} · tip of the day</span>`;
+}
+
+/* ---------- weekly dispatch expand/collapse ---------- */
+function setupDispatchToggle(n){
+  const tg=$("#dispatchToggle"),btn=$("#dispatchBtn");
+  if(!tg||!btn)return;
+  if(n<=1){tg.style.display="none";return;}
+  tg.style.display="";
+  let open=false;
+  const sync=()=>{
+    $("#weeks").querySelectorAll(".week").forEach((el,i)=>el.classList.toggle("hidden",!open&&i>0));
+    btn.textContent=open?"Show latest only ▲":`Show all ${n} weeks ▼`;
+  };
+  btn.onclick=()=>{open=!open;sync();};
+  sync();
+}
+
+/* ---------- strategy reflections (from the all-time marathon) ---------- */
+function renderStrategy(){
+  const grid=$("#stratGrid");if(!grid)return;
+  const S=(typeof HISTORY==="object"&&HISTORY&&HISTORY.standings)?HISTORY.standings:[];
+  if(!S.length){$("#stratPanel").style.display="none";return;}
+  const by=(k,dir=1)=>S.slice().sort((a,b)=>(b[k]-a[k])*dir);
+  const veterans=S.filter(s=>s.entries>=10);
+  const topAvg=by("avg_return")[0];
+  const mostGold=by("gold")[0];
+  const mostPodium=by("podiums")[0];
+  const topQ=(HISTORY.top_quarters||[])[0];
+  const worstQ=(HISTORY.worst_quarters||[])[0];
+  const bestWealth=by("reinvest_5k")[0];
+  const m=v=>Math.round(v).toLocaleString("en-US");
+  const cards=[
+    ["🎯","Concentration wins gold","Across the marathon, <b>"+esc(mostGold.name)+"</b> leads with "+mostGold.gold+" quarter wins on a "+(+mostGold.avg_return).toFixed(1)+"% average — proof that one high-conviction pick can take a quarter. The flip side: the biggest single quarter ever was <b>"+esc(topQ.name)+"</b>'s +"+(+topQ.return_pct).toFixed(0)+"% in "+esc(topQ.quarter)+", the kind of swing only a concentrated bet produces."],
+    ["🪤","Blow-ups undo everything","The worst quarter on record is <b>"+esc(worstQ.name)+"</b> at "+(+worstQ.return_pct).toFixed(0)+"% ("+esc(worstQ.quarter)+"). One quarter like that erases years of steady gains — recovering a −50% needs a +100%. The lesson the table keeps teaching: avoiding disasters beats chasing moonshots."],
+    ["👑","Podiums aren't wealth","<b>"+esc(mostPodium.name)+"</b> has the most podiums ("+mostPodium.podiums+"), yet placing often isn't the same as compounding. The simulated 'roll-it-over + 5k each quarter' pot tells the real story: <b>"+esc(bestWealth.name)+"</b> sits on ~"+m(bestWealth.reinvest_5k)+", because they avoided the deep negative quarters that quietly bankrupt a portfolio."],
+    ["🐢","Show up, every quarter","The longest-tenured players have "+Math.max(...S.map(s=>s.entries))+" quarters logged. Returns are lumpy and unpredictable quarter to quarter — the only reliable edge over a "+(HISTORY.coverage?HISTORY.coverage.total_quarters:34)+"-quarter marathon is consistent participation and a repeatable process, not one lucky season."],
+  ];
+  grid.innerHTML=cards.map(([em,h,p])=>`<div class="strat"><span class="strat-em">${em}</span><h4>${esc(h)}</h4><p>${p}</p></div>`).join("");
+  $("#stratNote").textContent="Patterns drawn from "+(HISTORY.coverage?HISTORY.coverage.first_quarter+"–"+HISTORY.coverage.last_quarter+", "+HISTORY.coverage.total_quarters+" quarters":"the marathon history")+". Past results are no guarantee of future returns — this is friendly reflection, not financial advice.";
+}
+
 /* ---------- boot ---------- */
 (async function(){
+  renderDailyTip();
+  renderStrategy();
   applyTheme(localStorage.getItem("ii-theme")||"dark");
   await loadQuarters();
   const params=new URLSearchParams(location.search);
