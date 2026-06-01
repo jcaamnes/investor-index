@@ -150,6 +150,23 @@ def add_quarter(label, start_date, end_date, is_active=0):
         return cur.lastrowid
 
 
+def update_quarter(quarter_id, **fields):
+    allowed = {"label", "start_date", "end_date"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not sets:
+        return
+    cols = ", ".join(f"{k} = ?" for k in sets)
+    with db() as conn:
+        conn.execute(f"UPDATE quarters SET {cols} WHERE id = ?", (*sets.values(), quarter_id))
+
+
+def delete_quarter(quarter_id):
+    """Delete a quarter. Positions for it are removed via ON DELETE CASCADE.
+    Shared price_history is left intact."""
+    with db() as conn:
+        conn.execute("DELETE FROM quarters WHERE id = ?", (quarter_id,))
+
+
 def set_active_quarter(quarter_id):
     with db() as conn:
         conn.execute("UPDATE quarters SET is_active = 0")

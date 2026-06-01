@@ -202,6 +202,27 @@ def api_add_quarter():
     return jsonify({"id": qid})
 
 
+@app.post("/api/quarters/<int:qid>")
+@require_admin
+def api_update_quarter(qid):
+    d = request.get_json(force=True, silent=True) or request.form
+    fields = {}
+    for f in ("label", "start_date", "end_date"):
+        if d.get(f) is not None and str(d.get(f)).strip():
+            fields[f] = str(d.get(f)).strip()
+    if not fields:
+        abort(400, "nothing to update")
+    db.update_quarter(qid, **fields)
+    return jsonify({"ok": True})
+
+
+@app.delete("/api/quarters/<int:qid>")
+@require_admin
+def api_delete_quarter(qid):
+    db.delete_quarter(qid)
+    return jsonify({"ok": True})
+
+
 @app.post("/api/quarters/<int:qid>/activate")
 @require_admin
 def api_activate_quarter(qid):

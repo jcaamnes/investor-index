@@ -18,54 +18,40 @@
   </header>
 
   <main class="wrap">
-    <div class="admin-grid">
-      <!-- COMPETITORS -->
-      <section class="panel">
-        <div class="panel-head"><h3>Competitors</h3><span class="rule"></span></div>
-        <form id="investorForm" enctype="multipart/form-data">
-          <div class="field"><label>Name</label><input name="name" required placeholder="e.g. Jan"></div>
-          <div class="field"><label>Tagline</label><input name="tagline" placeholder="The Oracle of Oslo"></div>
-          <div class="field row">
-            <div><label>Accent colour</label><input name="color" type="color" value="#c8a45c"></div>
-            <div><label>Benchmark?</label>
-              <select name="is_benchmark"><option value="0">No — competitor</option>
-                <option value="1">Yes — index/benchmark</option></select></div>
-          </div>
-          <div class="field"><label>Photo</label><input name="photo" type="file" accept="image/*"></div>
-          <button class="btn gold" type="submit">Add competitor</button>
-        </form>
-        <div id="investorList" style="margin-top:18px"></div>
-      </section>
-
-      <!-- QUARTERS -->
-      <section class="panel">
-        <div class="panel-head"><h3>Quarters</h3><span class="rule"></span></div>
-        <form id="quarterForm">
-          <div class="field"><label>Label</label><input name="label" required placeholder="Q3 2026"></div>
-          <div class="field row">
-            <div><label>Start date</label><input name="start_date" type="date" required></div>
-            <div><label>End date</label><input name="end_date" type="date" required></div>
-          </div>
-          <div class="field"><label><input type="checkbox" name="is_active" checked> Make active</label></div>
-          <button class="btn gold" type="submit">Add quarter</button>
-        </form>
-        <div id="quarterList" style="margin-top:18px"></div>
-      </section>
-    </div>
-
-    <!-- POSITIONS -->
+    <!-- COMPETITORS -->
     <section class="panel">
-      <div class="panel-head"><h3>Buy Orders</h3><span class="rule"></span>
-        <select class="qtr-select" id="posQuarter"></select>
-        <button class="btn ghost" id="refreshPrices">↻ Refresh prices</button></div>
-      <p style="color:var(--text-dim);font-size:13px;margin-top:-6px">
-        One pick per competitor per quarter. <b>Yahoo symbol</b> is what's queried
-        (Oslo Børs tickers usually end in <code>.OL</code>, indices start with <code>^</code>).
-        Leave it blank to reuse the ticker.</p>
-      <div style="overflow-x:auto"><table class="board"><thead><tr>
-        <th class="l">Investor</th><th class="l">Ticker</th><th class="l">Yahoo symbol</th>
-        <th class="l">Buy price</th><th class="l">Buy date</th><th></th>
-      </tr></thead><tbody id="posBody"></tbody></table></div>
+      <div class="panel-head"><h3>Competitors</h3><span class="rule"></span></div>
+      <form id="investorForm" enctype="multipart/form-data">
+        <div class="field"><label>Name</label><input name="name" required placeholder="e.g. Jan"></div>
+        <div class="field"><label>Tagline</label><input name="tagline" placeholder="The Oracle of Oslo"></div>
+        <div class="field row">
+          <div><label>Accent colour</label><input name="color" type="color" value="#c8a45c"></div>
+          <div><label>Benchmark?</label>
+            <select name="is_benchmark"><option value="0">No — competitor</option>
+              <option value="1">Yes — index/benchmark</option></select></div>
+        </div>
+        <div class="field"><label>Photo</label><input name="photo" type="file" accept="image/*"></div>
+        <button class="btn gold" type="submit">Add competitor</button>
+      </form>
+      <div id="investorList" style="margin-top:18px"></div>
+    </section>
+
+    <!-- QUARTERS + THEIR BUY ORDERS -->
+    <section class="panel">
+      <div class="panel-head"><h3>Quarters &amp; Buy Orders</h3><span class="rule"></span></div>
+      <form id="quarterForm" class="quarter-add">
+        <div class="field"><label>Label</label><input name="label" required placeholder="Q1 2026"></div>
+        <div class="field"><label>Start</label><input name="start_date" type="date" required></div>
+        <div class="field"><label>End</label><input name="end_date" type="date" required></div>
+        <label class="qa-active"><input type="checkbox" name="is_active"> Active</label>
+        <button class="btn gold" type="submit">Add quarter</button>
+      </form>
+      <p style="color:var(--text-dim);font-size:13px;margin:12px 0 0">
+        Click <b>Edit</b> on a quarter to change its dates and manage every competitor's
+        buy order. One pick per competitor per quarter. <b>Yahoo symbol</b> is what's
+        queried (Oslo Børs tickers usually end in <code>.OL</code>, indices start with
+        <code>^</code>); leave it blank to reuse the ticker.</p>
+      <div id="quarterList" style="margin-top:14px"></div>
     </section>
 
     <p class="foot">Changes save instantly · refresh prices to update the dashboard</p>
