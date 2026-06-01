@@ -533,6 +533,9 @@ function emptyState(q){
     <div class="tag">No buy orders or stored prices for this quarter.</div></div></div>`;
   ["#legend","#boardBody","#awards"].forEach(s=>{const el=$(s);if(el)el.innerHTML="";});
   $("#weeks").innerHTML=`<div style="color:var(--text-dim);font-style:italic;font-family:var(--serif);font-size:18px;text-align:center;padding:30px">Nothing recorded for this quarter.</div>`;
+  // wipe the performance chart so a previously-viewed quarter doesn't linger
+  STATE=null;CHART_GEO=null;$("#tip").style.opacity=0;
+  const cv=$("#perfChart");if(cv){const ctx=cv.getContext("2d");ctx.clearRect(0,0,cv.width,cv.height);}
 }
 
 async function showQuarter(qid,push){
