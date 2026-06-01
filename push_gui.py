@@ -13,14 +13,24 @@ Run it by double-clicking push_gui.command, or:  python push_gui.py
 import json
 import os
 import socket
+import ssl
 import subprocess
 import sys
 import threading
+import urllib.request
 import webbrowser
 
-from flask import Flask, Response
+from flask import Flask, Response, jsonify, request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+# Some macOS Python builds ship without CA certs wired up; use certifi's bundle
+# when available (it's a yfinance dependency) so HTTPS to the live site works.
+try:
+    import certifi
+    _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except Exception:
+    _SSL_CTX = ssl.create_default_context()
 
 # --- Config -----------------------------------------------------------------
 # Credentials live in push_config.json (gitignored — never committed). Env vars
@@ -84,7 +94,13 @@ body{font-family:var(--sans);background:var(--bg);background-image:var(--bg-grad
 .panel-head h3{font-family:var(--serif);font-size:24px;font-weight:700;margin:0;letter-spacing:.01em}
 .panel-head .rule{flex:1;height:1px;background:var(--border)}
 .panel-head .note{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint)}
-.row{display:flex;align-items:center;gap:18px;margin-bottom:20px}
+.row{display:flex;align-items:center;gap:18px;margin-bottom:20px;flex-wrap:wrap}
+.field-q{display:flex;align-items:center;gap:10px}
+.field-q label{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--text-faint)}
+select#qsel{font-family:var(--sans);font-size:14px;color:var(--text);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:999px;
+  padding:10px 16px;cursor:pointer;min-width:200px}
 .btn{font-family:var(--sans);font-size:14px;font-weight:600;color:#1a1407;cursor:pointer;
   background:linear-gradient(180deg,var(--gold-soft),var(--gold));border:1px solid transparent;
   border-radius:999px;padding:11px 26px;transition:transform .1s,filter .2s}
@@ -116,6 +132,10 @@ pre#log{background:var(--surface-2);border:1px solid var(--border);border-radius
       <span class="note">Local Yahoo Fetch → Live Site</span>
     </div>
     <div class="row">
+      <div class="field-q">
+        <label for="qsel">Quarter</label>
+        <select id="qsel"><option value="">Active quarter</option></select>
+      </div>
       <button class="btn" id="go" onclick="run()">Update Prices</button>
       <span class="status" id="status">Ready.</span>
     </div>
@@ -127,6 +147,21 @@ pre#log{background:var(--surface-2);border:1px solid var(--border);border-radius
 const log = document.getElementById('log');
 const btn = document.getElementById('go');
 const status = document.getElementById('status');
+const qsel = document.getElementById('qsel');
+// Populate the quarter dropdown from the live server.
+(async function loadQuarters(){
+  try{
+    const r = await fetch('/quarters'); const d = await r.json();
+    const qs = (d.quarters||[]).slice().sort((a,b)=>a.start_date<b.start_date?1:-1);
+    let html = '<option value="">Active quarter</option>';
+    if(qs.length>1) html += '<option value="all">All quarters</option>';
+    qs.forEach(q=>{
+      const live = q.id===d.active_id ? ' · live' : '';
+      html += `<option value="${q.id}">${q.label}${live}</option>`;
+    });
+    qsel.innerHTML = html;
+  }catch(e){ /* leave the default "Active quarter" option */ }
+})();
 function add(line){
   let cls='', t=line.trim();
   if(t.startsWith('OK')) cls='ok';
@@ -142,7 +177,7 @@ function run(){
   status.textContent='Working…'; status.style.color='var(--gold)';
   log.textContent='';
   let ok=0, fail=0;
-  const es=new EventSource('/stream');
+  const es=new EventSource('/stream?q='+encodeURIComponent(qsel.value));
   es.onmessage=(e)=>{
     if(e.data==='__DONE__'){ es.close();
       btn.disabled=false; btn.textContent='Update Prices';
@@ -164,11 +199,31 @@ def index():
     return PAGE.replace("__URL__", URL)
 
 
+@app.route("/quarters")
+def quarters():
+    """Proxy the live site's quarter list so the dropdown can populate."""
+    try:
+        with urllib.request.urlopen(f"{URL.rstrip('/')}/api/quarters",
+                                    timeout=30, context=_SSL_CTX) as resp:
+            return jsonify(json.loads(resp.read().decode("utf-8")))
+    except Exception as exc:
+        return jsonify({"quarters": [], "active_id": None, "error": str(exc)})
+
+
 @app.route("/stream")
 def stream():
+    # Translate the dropdown choice into a push_prices flag.
+    q = (request.args.get("q") or "").strip()
+    extra = []
+    if q == "all":
+        extra = ["--all"]
+    elif q.isdigit():
+        extra = ["--quarter-id", q]
+    # else: empty -> default (active quarter)
+
     def gen():
         cmd = [PYTHON, "-u", os.path.join(HERE, "push_prices.py"),
-               "--url", URL, "--password", PASSWORD]
+               "--url", URL, "--password", PASSWORD] + extra
         proc = subprocess.Popen(cmd, cwd=HERE, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, text=True, bufsize=1)
         for ln in proc.stdout:

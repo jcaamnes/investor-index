@@ -9,6 +9,13 @@ Usage:
 
     python push_prices.py --url https://investor-index.onrender.com --password SECRET
 
+By default it pushes the server's active quarter. To push a specific or every
+quarter (e.g. to backfill a past season's prices on the live site):
+
+    python push_prices.py --url ... --password ... --quarter "Q1 2026"
+    python push_prices.py --url ... --password ... --quarter-id 3
+    python push_prices.py --url ... --password ... --all
+
 Or via environment variables (handy for a cron job):
 
     PUSH_URL=https://investor-index.onrender.com \
@@ -63,61 +70,103 @@ def _post_json(url, body, password):
         return json.loads(resp.read().decode("utf-8"))
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Fetch prices locally and push to the live Investor Index.")
-    ap.add_argument("--url", default=os.environ.get("PUSH_URL", ""),
-                    help="Base URL of the live site, e.g. https://investor-index.onrender.com")
-    ap.add_argument("--password", default=os.environ.get("ADMIN_PASSWORD", ""),
-                    help="Admin password set on the server (ADMIN_PASSWORD).")
-    args = ap.parse_args()
+def _resolve_targets(base, args):
+    """Return the list of target quarters (active / one / all) to push.
 
-    base = args.url.strip().rstrip("/")
-    if not base:
-        sys.exit("No URL. Pass --url or set PUSH_URL.")
-
-    # 1) Which quarter is active, and over what dates?
+    Each quarter is pushed over its OWN date range only — we don't fetch beyond
+    the quarter's window. The server replaces just that date range per symbol, so
+    a shared ticker keeps the closes stored for its other quarters.
+    """
     qmeta = _get_json(f"{base}/api/quarters")
-    active_id = qmeta.get("active_id")
-    quarters = {q["id"]: q for q in qmeta.get("quarters", [])}
-    quarter = quarters.get(active_id)
-    if not quarter:
-        sys.exit("No active quarter on the server. Add/activate one in /admin first.")
+    quarters = qmeta.get("quarters", [])
+    if not quarters:
+        sys.exit("No quarters on the server. Add one in /admin first.")
+    by_id = {q["id"]: q for q in quarters}
 
-    start = quarter["start_date"]
+    if args.all:
+        return quarters
+    if args.quarter_id is not None:
+        q = by_id.get(args.quarter_id)
+        if not q:
+            sys.exit(f"No quarter with id {args.quarter_id} on the server.")
+        return [q]
+    if args.quarter:
+        match = [q for q in quarters
+                 if q["label"].strip().lower() == args.quarter.strip().lower()]
+        if not match:
+            labels = ", ".join(q["label"] for q in quarters)
+            sys.exit(f"No quarter labelled {args.quarter!r}. Known: {labels}")
+        return match
+    q = by_id.get(qmeta.get("active_id"))
+    if not q:
+        sys.exit("No active quarter on the server. Add/activate one in /admin first.")
+    return [q]
+
+
+def _push_quarter(base, quarter, password):
+    """Fetch one quarter's symbols over its own range and push them. Returns
+    (stored_count, fail_count)."""
     today = dt.date.today().isoformat()
+    start = quarter["start_date"]
     end = min(quarter["end_date"], today)
 
-    # 2) Which symbols does it hold?
-    positions = _get_json(f"{base}/api/positions?quarter_id={active_id}").get("positions", [])
+    positions = _get_json(
+        f"{base}/api/positions?quarter_id={quarter['id']}").get("positions", [])
     symbols = sorted({p["yahoo_symbol"] for p in positions if p.get("yahoo_symbol")})
     if not symbols:
-        sys.exit("No positions in the active quarter. Enter buy orders in /admin first.")
+        print(f"Quarter {quarter['label']}  ·  no positions — skipping.")
+        return 0, 0
 
     print(f"Quarter {quarter['label']}  ({start} -> {end})  ·  {len(symbols)} symbols")
 
-    # 3) Fetch each symbol locally (Yahoo serves your residential IP).
-    prices, ok, fail = {}, [], []
+    prices, fail = {}, []
     for sym in symbols:
         rows, reason = fetch_prices.fetch_quotes(sym, start, end)
         if rows:
             prices[sym] = rows
-            ok.append(sym)
             print(f"  OK    {sym:<14} {len(rows)} closes")
         else:
             fail.append((sym, reason))
             print(f"  FAIL  {sym:<14} {reason}")
 
     if not prices:
-        sys.exit("\nFetched nothing — not pushing. (Check your symbols / connection.)")
+        print("  (fetched nothing — not pushing this quarter.)")
+        return 0, len(fail)
 
-    # 4) Push the closes up to the server.
-    result = _post_json(f"{base}/api/prices", {"prices": prices}, args.password)
+    result = _post_json(f"{base}/api/prices", {"prices": prices}, password)
     stored = result.get("stored", {})
     total = sum(stored.values())
-    print(f"\nPushed {len(stored)} symbols ({total} closes) to {base}.")
+    print(f"  Pushed {len(stored)} symbols ({total} closes).")
     if fail:
-        print(f"{len(fail)} symbol(s) had no data and were left as-is: "
-              + ", ".join(s for s, _ in fail))
+        print("  Left as-is (no data): " + ", ".join(s for s, _ in fail))
+    return total, len(fail)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Fetch prices locally and push to the live Investor Index.")
+    ap.add_argument("--url", default=os.environ.get("PUSH_URL", ""),
+                    help="Base URL of the live site, e.g. https://investor-index.onrender.com")
+    ap.add_argument("--password", default=os.environ.get("ADMIN_PASSWORD", ""),
+                    help="Admin password set on the server (ADMIN_PASSWORD).")
+    ap.add_argument("--all", action="store_true", help="push every quarter")
+    ap.add_argument("--quarter", help="push one quarter by its label, e.g. 'Q1 2026'")
+    ap.add_argument("--quarter-id", type=int, help="push one quarter by its numeric id")
+    args = ap.parse_args()
+
+    base = args.url.strip().rstrip("/")
+    if not base:
+        sys.exit("No URL. Pass --url or set PUSH_URL.")
+
+    targets = _resolve_targets(base, args)
+    grand_total = grand_fail = 0
+    for q in targets:
+        total, fail = _push_quarter(base, q, args.password)
+        grand_total += total
+        grand_fail += fail
+
+    if grand_total == 0:
+        sys.exit("\nNothing pushed. (Check your symbols / connection.)")
+    print(f"\nDone · pushed {grand_total} closes to {base}.")
 
 
 if __name__ == "__main__":

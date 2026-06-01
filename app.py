@@ -288,7 +288,11 @@ def api_ingest_prices():
         if not sym or not series:
             skipped[symbol] = "no valid rows"
             continue
-        db.clear_prices(sym)
+        # Replace only the date window we're pushing, so a single-quarter push
+        # doesn't wipe the same symbol's closes stored for other quarters.
+        lo = min(d for d, _ in series)
+        hi = max(d for d, _ in series)
+        db.clear_prices_range(sym, lo, hi)
         db.store_prices(sym, series)
         stored[sym] = len(series)
 

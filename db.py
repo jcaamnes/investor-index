@@ -261,6 +261,19 @@ def clear_prices(yahoo_symbol):
         conn.execute("DELETE FROM price_history WHERE yahoo_symbol = ?", (yahoo_symbol,))
 
 
+def clear_prices_range(yahoo_symbol, start, end):
+    """Delete stored closes for a symbol only within [start, end] (inclusive).
+
+    Used when pushing a single quarter's prices: it refreshes just that date
+    window and leaves the same symbol's closes from other quarters untouched.
+    """
+    with db() as conn:
+        conn.execute(
+            "DELETE FROM price_history WHERE yahoo_symbol = ? AND date >= ? AND date <= ?",
+            (yahoo_symbol, start, end),
+        )
+
+
 def clear_synthetic_prices():
     """Purge any legacy fabricated rows. Returns the number deleted."""
     with db() as conn:
