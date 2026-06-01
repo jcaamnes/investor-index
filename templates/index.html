@@ -168,6 +168,44 @@ table.board{width:100%;border-collapse:collapse}
   padding:12px 22px;border-radius:999px;font-size:14px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .3s;z-index:100}
 .toast.show{opacity:1}
 @media(max-width:880px){.hero{grid-template-columns:1fr}.week{grid-template-columns:1fr}.hof-grid{grid-template-columns:1fr}.strat-grid{grid-template-columns:1fr}}
+/* mobile: trim the header to brand + quarter + manage + theme */
+@media(max-width:640px){
+  .topbar-inner{padding:11px 16px;gap:8px;flex-wrap:nowrap}
+  .brand .sub{display:none}
+  .brand .mark{font-size:20px;letter-spacing:.02em;white-space:nowrap}
+  #srcBanner,#liveBadge{display:none!important}
+  .spacer{flex:1}
+  .ctrl{padding:8px 11px;font-size:12px}
+  #qSelect{max-width:36vw}
+  .wrap{padding:0 16px 64px}
+  .epigraph{font-size:18px;margin-top:18px}
+  /* tighter panels + smaller headings */
+  .panel{padding:16px 15px;margin-bottom:14px;border-radius:13px}
+  .phead h3{font-size:21px}
+  /* shorter chart, roomier touch target */
+  .chart-wrap{height:300px}
+  /* leader card scales down */
+  .leader-card{padding:18px;gap:16px}
+  .avatar{width:78px;height:78px;font-size:32px}
+  .leader-meta h2{font-size:32px}
+  .leader-return{font-size:26px}
+  /* standings: keep #, Investor, Ticker, Return, Trend — drop the rest */
+  .board:not(.hof-table) th:nth-child(4),.board:not(.hof-table) td:nth-child(4),
+  .board:not(.hof-table) th:nth-child(5),.board:not(.hof-table) td:nth-child(5),
+  .board:not(.hof-table) th:nth-child(8),.board:not(.hof-table) td:nth-child(8),
+  .board:not(.hof-table) th:nth-child(9),.board:not(.hof-table) td:nth-child(9),
+  .board:not(.hof-table) th:nth-child(10),.board:not(.hof-table) td:nth-child(10){display:none}
+  .board tbody td,.board thead th{padding:9px 7px;font-size:13px}
+  .player .tg{display:none}
+  /* hall of fame table: keep Investor, medals, Podiums, Avg */
+  .hof-table th:nth-child(2),.hof-table td:nth-child(2),
+  .hof-table th:nth-child(7),.hof-table td:nth-child(7),
+  .hof-table th:nth-child(9),.hof-table td:nth-child(9),
+  .hof-table th:nth-child(10),.hof-table td:nth-child(10){display:none}
+  .hof-foot{display:none}
+  /* weekly dispatch reads as a stacked card */
+  .week{padding:14px 0}
+}
 </style>
 </head>
 <body>
@@ -511,7 +549,8 @@ function drawChart(){
 }
 function chartHover(ev){
   if(!CHART_GEO||!STATE)return;const g=CHART_GEO;const cv=$("#perfChart");const rect=cv.getBoundingClientRect();
-  const mx=ev.clientX-rect.left;const tip=$("#tip");
+  const clientX=(ev.touches&&ev.touches[0])?ev.touches[0].clientX:ev.clientX;
+  const mx=clientX-rect.left;const tip=$("#tip");
   if(mx<g.padL||mx>g.W-g.padR){tip.style.opacity=0;return;}
   const i=Math.round((mx-g.padL)/(g.plotW||1)*(g.n-1));const idx=Math.max(0,Math.min(g.n-1,i));
   const rows=g.series.map(r=>({c:r.color,n:r.name,t:r.ticker,v:r.return_series[idx]})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
@@ -520,6 +559,10 @@ function chartHover(ev){
 }
 $("#perfChart").addEventListener("mousemove",chartHover);
 $("#perfChart").addEventListener("mouseleave",()=>{$("#tip").style.opacity=0;});
+// touch: tap-and-drag to scrub the chart on mobile
+$("#perfChart").addEventListener("touchstart",e=>{chartHover(e);},{passive:true});
+$("#perfChart").addEventListener("touchmove",e=>{chartHover(e);e.preventDefault();},{passive:false});
+$("#perfChart").addEventListener("touchend",()=>{setTimeout(()=>{$("#tip").style.opacity=0;},1200);});
 let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{if(STATE)drawChart();},150);});
 
 /* ---------- data loading + quarter switching ---------- */
