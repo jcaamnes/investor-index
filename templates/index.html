@@ -50,6 +50,12 @@ body{font-family:var(--sans);background:var(--bg);background-image:var(--bg-grad
   border-left:3px solid var(--gold);padding-left:16px;margin:26px 0 0}
 .banner{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--gold);
   background:var(--chip);border:1px dashed var(--border-strong);border-radius:999px;padding:6px 14px;display:inline-block}
+.qbadge{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  padding:6px 12px;border-radius:999px;border:1px solid var(--border-strong)}
+.qbadge.live{color:var(--pos);background:color-mix(in srgb,var(--pos) 13%,transparent);
+  border-color:color-mix(in srgb,var(--pos) 42%,transparent)}
+.qbadge.archive{color:var(--text-dim);background:var(--chip);border-style:dashed}
+#qSelect{cursor:pointer;font-family:var(--mono);font-size:12px;letter-spacing:.04em}
 .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;margin:26px 0 22px}
 .leader-card{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--surface-3),var(--surface));
   border:1px solid var(--border-strong);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);
@@ -147,8 +153,10 @@ table.board{width:100%;border-collapse:collapse}
 <body>
 <header class="topbar"><div class="topbar-inner">
   <div class="brand"><span class="mark">INVESTOR <em>INDEX</em></span><span class="sub" id="qtag">— · —</span></div>
+  <span class="qbadge" id="liveBadge" style="display:none"></span>
   <span class="spacer"></span>
   <span class="banner" id="srcBanner" style="display:none"></span>
+  <select class="ctrl" id="qSelect" title="View a quarter" style="display:none"></select>
   <a class="ctrl" href="/admin" id="manageLink">Manage</a>
   <button class="ctrl icon" id="themeToggle" title="Toggle light/dark">☀</button>
 </div></header>
@@ -368,7 +376,7 @@ function render(d){
   const mini=(label,w)=>w?`<div class="mini"><span class="k">${label}</span><span class="v">${avatar(w.photo,w.name,"av-sm")} ${esc(w.name)} <span class="${cls(w.value)}">${fmtPct(w.value)}</span></span></div>`
     :`<div class="mini"><span class="k">${label}</span><span class="v">—</span></div>`;
   $("#hero").innerHTML=`<div class="leader-card"><div>${avatar(ld.photo,ld.name,"avatar")}</div>
-    <div class="leader-meta"><div class="crown">★ Best Investor · ${esc(d.quarter.label||"")}</div>
+    <div class="leader-meta"><div class="crown">${IS_ARCHIVE?"🏆 Champion":"★ Best Investor"} · ${esc(d.quarter.label||"")}</div>
     <h2>${esc(ld.name)}</h2><div class="tag">${esc(ld.tagline||"")}</div>
     <div class="leader-return ${cls(ld.return_pct)}">${fmtPct(ld.return_pct)}<span class="tk">${esc(ld.ticker)}</span></div></div></div>
     <div class="side">${mini("Biggest Loser",a.biggest_loser)}${mini("Most Volatile",a.most_risky)}
@@ -476,28 +484,84 @@ $("#perfChart").addEventListener("mousemove",chartHover);
 $("#perfChart").addEventListener("mouseleave",()=>{$("#tip").style.opacity=0;});
 let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{if(STATE)drawChart();},150);});
 
-/* ---------- live vs dummy ---------- */
-async function loadLive(){
-  // The database is the source of truth. Return the server payload whenever
-  // the server responds with a real quarter (competitors present) — even if no
-  // prices are stored yet. We only fall back to the offline demo when the
-  // server is genuinely unreachable, so navigating around never swaps your
-  // refreshed Yahoo data for fake numbers.
+/* ---------- data loading + quarter switching ---------- */
+let QUARTERS=[],ACTIVE_ID=null,IS_ARCHIVE=false;
+
+async function loadQuarters(){
   try{
-    const r=await fetch("/api/dashboard",{cache:"no-store"});
+    const r=await fetch("/api/quarters",{cache:"no-store"});
     if(!r.ok)throw 0;const d=await r.json();
-    if(d&&!d.error&&Array.isArray(d.competitors)&&d.competitors.length){
-      d.is_synthetic=!!d.is_synthetic;return d;
-    }
+    QUARTERS=d.quarters||[];ACTIVE_ID=d.active_id||null;
+  }catch(e){QUARTERS=[];ACTIVE_ID=null;}
+}
+
+// The database is the source of truth. We only fall back to the offline demo
+// when the server is genuinely unreachable / has no quarters at all.
+async function loadDashboard(qid){
+  try{
+    const u=qid!=null?("/api/dashboard?quarter_id="+encodeURIComponent(qid)):"/api/dashboard";
+    const r=await fetch(u,{cache:"no-store"});
+    if(!r.ok)throw 0;const d=await r.json();
+    if(d&&!d.error)return d;
   }catch(e){}
   return null;
+}
+
+function fillQuarterSelect(selId){
+  const sel=$("#qSelect");if(!sel)return;
+  if(!QUARTERS.length){sel.style.display="none";return;}
+  sel.style.display="";
+  const qs=QUARTERS.slice().sort((a,b)=>a.start_date<b.start_date?1:-1); // newest first
+  sel.innerHTML=qs.map(q=>`<option value="${q.id}">${esc(q.label)}${q.id===ACTIVE_ID?" · live":""}</option>`).join("");
+  if(selId!=null)sel.value=String(selId);
+}
+
+function setBadge(qid){
+  const b=$("#liveBadge");if(!b)return;
+  IS_ARCHIVE=ACTIVE_ID!=null&&qid!=null&&Number(qid)!==Number(ACTIVE_ID);
+  if(qid==null){b.style.display="none";return;}
+  b.style.display="inline-block";
+  if(IS_ARCHIVE){b.className="qbadge archive";b.textContent="Archive";}
+  else{b.className="qbadge live";b.textContent="● Live";}
+}
+
+function emptyState(q){
+  $("#qtag").textContent="— "+((q&&q.label)||"")+" —";
+  $("#srcBanner").style.display="none";
+  $("#hero").innerHTML=`<div class="leader-card"><div class="leader-meta">
+    <div class="crown">${esc((q&&q.label)||"")}</div><h2>No data yet</h2>
+    <div class="tag">No buy orders or stored prices for this quarter.</div></div></div>`;
+  ["#legend","#boardBody","#awards"].forEach(s=>{const el=$(s);if(el)el.innerHTML="";});
+  $("#weeks").innerHTML=`<div style="color:var(--text-dim);font-style:italic;font-family:var(--serif);font-size:18px;text-align:center;padding:30px">Nothing recorded for this quarter.</div>`;
+}
+
+async function showQuarter(qid,push){
+  const d=await loadDashboard(qid);
+  const realId=qid!=null?Number(qid):ACTIVE_ID;
+  setBadge(realId);
+  if(d&&Array.isArray(d.competitors)&&d.competitors.length){d.is_synthetic=!!d.is_synthetic;render(d);}
+  else if(d&&d.quarter){emptyState(d.quarter);}
+  else{setBadge(null);render(buildDummy());}   // server unreachable / no quarters
+  const sel=$("#qSelect");if(sel&&realId!=null)sel.value=String(realId);
+  if(push&&realId!=null){const url=new URL(location);url.searchParams.set("quarter_id",realId);history.pushState({qid:realId},"",url);}
 }
 
 /* ---------- boot ---------- */
 (async function(){
   applyTheme(localStorage.getItem("ii-theme")||"dark");
-  const live=await loadLive();
-  render(live||buildDummy());
+  await loadQuarters();
+  const params=new URLSearchParams(location.search);
+  const fromUrl=params.get("quarter_id");
+  const qid=fromUrl?Number(fromUrl):(ACTIVE_ID!=null?ACTIVE_ID:null);
+  fillQuarterSelect(qid);
+  const sel=$("#qSelect");
+  if(sel)sel.onchange=e=>showQuarter(Number(e.target.value),true);
+  window.addEventListener("popstate",()=>{
+    const p=new URLSearchParams(location.search);const id=p.get("quarter_id");
+    const v=id?Number(id):(ACTIVE_ID!=null?ACTIVE_ID:null);
+    showQuarter(v,false);
+  });
+  await showQuarter(qid,false);
 })();
 </script>
 </body>
