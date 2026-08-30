@@ -485,6 +485,7 @@ function render(d){
   // (it carries `coverage`); otherwise fall back to the baked-in marathon so a
   // stale server never collapses the Hall of Fame to a single quarter.
   const h=(d.hall_of_fame&&d.hall_of_fame.coverage)?d.hall_of_fame:buildHOF(d.competitors||[]);
+  renderStrategy(h);   // upgrade the strategy panel from the static fallback to live data
   const bq=h.best_quarter,wq=h.worst_quarter;
   if(h.coverage)$("#hofNote").textContent=h.coverage.first_quarter+" – "+h.coverage.last_quarter+" · "+h.coverage.total_quarters+" quarters";
   const recQ=(q,withTicker)=>q?esc(q.name)+" · "+(withTicker&&q.ticker?esc(q.ticker)+" · ":"")+esc(q.quarter):"";
@@ -671,27 +672,40 @@ function setupDispatchToggle(n){
 }
 
 /* ---------- strategy reflections (from the all-time marathon) ---------- */
-function renderStrategy(){
+// Prefer the live server-computed Hall of Fame (same `hall_of_fame` payload
+// the standings table uses, which folds in every completed quarter, not just
+// the frozen history.json seed). Only fall back to the static baked-in
+// history if called before the dashboard has loaded, or if the server is
+// unreachable — otherwise this panel would freeze at whatever quarter
+// history.json last covered and never pick up new seasons.
+function renderStrategy(hof){
   const grid=$("#stratGrid");if(!grid)return;
-  const S=(typeof HISTORY==="object"&&HISTORY&&HISTORY.standings)?HISTORY.standings:[];
+  const H=(hof&&hof.coverage)?hof:HISTORY;
+  const S=((H&&H.standings)||[]).map(s=>({
+    name:s.name,
+    entries:s.entries!=null?s.entries:s.quarters,
+    gold:s.gold||0,
+    podiums:s.podiums||0,
+    avg_return:s.avg_return!=null?s.avg_return:s.avg,
+    reinvest_5k:s.reinvest_5k,
+  }));
   if(!S.length){$("#stratPanel").style.display="none";return;}
+  $("#stratPanel").style.display="";
   const by=(k,dir=1)=>S.slice().sort((a,b)=>(b[k]-a[k])*dir);
-  const veterans=S.filter(s=>s.entries>=10);
-  const topAvg=by("avg_return")[0];
   const mostGold=by("gold")[0];
   const mostPodium=by("podiums")[0];
-  const topQ=(HISTORY.top_quarters||[])[0];
-  const worstQ=(HISTORY.worst_quarters||[])[0];
+  const topQ=(H.top_quarters||[])[0];
+  const worstQ=(H.worst_quarters||[])[0];
   const bestWealth=by("reinvest_5k")[0];
   const m=v=>Math.round(v).toLocaleString("en-US");
   const cards=[
     ["🎯","Concentration wins gold","Across the marathon, <b>"+esc(mostGold.name)+"</b> leads with "+mostGold.gold+" quarter wins on a "+(+mostGold.avg_return).toFixed(1)+"% average — proof that one high-conviction pick can take a quarter. The flip side: the biggest single quarter ever was <b>"+esc(topQ.name)+"</b>'s +"+(+topQ.return_pct).toFixed(0)+"% in "+esc(topQ.quarter)+", the kind of swing only a concentrated bet produces."],
     ["🪤","Blow-ups undo everything","The worst quarter on record is <b>"+esc(worstQ.name)+"</b> at "+(+worstQ.return_pct).toFixed(0)+"% ("+esc(worstQ.quarter)+"). One quarter like that erases years of steady gains — recovering a −50% needs a +100%. The lesson the table keeps teaching: avoiding disasters beats chasing moonshots."],
     ["👑","Podiums aren't wealth","<b>"+esc(mostPodium.name)+"</b> has the most podiums ("+mostPodium.podiums+"), yet placing often isn't the same as compounding. The simulated 'roll-it-over + 5k each quarter' pot tells the real story: <b>"+esc(bestWealth.name)+"</b> sits on ~"+m(bestWealth.reinvest_5k)+", because they avoided the deep negative quarters that quietly bankrupt a portfolio."],
-    ["🐢","Show up, every quarter","The longest-tenured players have "+Math.max(...S.map(s=>s.entries))+" quarters logged. Returns are lumpy and unpredictable quarter to quarter — the only reliable edge over a "+(HISTORY.coverage?HISTORY.coverage.total_quarters:34)+"-quarter marathon is consistent participation and a repeatable process, not one lucky season."],
+    ["🐢","Show up, every quarter","The longest-tenured players have "+Math.max(...S.map(s=>s.entries))+" quarters logged. Returns are lumpy and unpredictable quarter to quarter — the only reliable edge over a "+(H.coverage?H.coverage.total_quarters:34)+"-quarter marathon is consistent participation and a repeatable process, not one lucky season."],
   ];
-  grid.innerHTML=cards.map(([em,h,p])=>`<div class="strat"><span class="strat-em">${em}</span><h4>${esc(h)}</h4><p>${p}</p></div>`).join("");
-  $("#stratNote").textContent="Patterns drawn from "+(HISTORY.coverage?HISTORY.coverage.first_quarter+"–"+HISTORY.coverage.last_quarter+", "+HISTORY.coverage.total_quarters+" quarters":"the marathon history")+". Past results are no guarantee of future returns — this is friendly reflection, not financial advice.";
+  grid.innerHTML=cards.map(([em,ttl,p])=>`<div class="strat"><span class="strat-em">${em}</span><h4>${esc(ttl)}</h4><p>${p}</p></div>`).join("");
+  $("#stratNote").textContent="Patterns drawn from "+(H.coverage?H.coverage.first_quarter+"–"+H.coverage.last_quarter+", "+H.coverage.total_quarters+" quarters":"the marathon history")+". Past results are no guarantee of future returns — this is friendly reflection, not financial advice.";
 }
 
 /* ---------- boot ---------- */

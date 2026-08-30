@@ -359,6 +359,19 @@ def hall_of_fame():
                 s["bronze"] += 1
             if c["rank"] <= 3:
                 s["podiums"] += 1
+            # Compound total return and the 5k-reinvested figure forward too —
+            # otherwise these two columns silently stay frozen at whatever
+            # history.json said, even as new quarters get folded in above.
+            ret = c["return_pct"]
+            if s["tot_return"] is None:
+                s["tot_return"] = round(ret, 2)
+            else:
+                s["tot_return"] = round(
+                    ((1 + s["tot_return"] / 100) * (1 + ret / 100) - 1) * 100, 2)
+            if s["reinvest_5k"] is None:
+                s["reinvest_5k"] = round(5000 * (1 + ret / 100))
+            else:
+                s["reinvest_5k"] = round(s["reinvest_5k"] * (1 + ret / 100))
             cur = s["best"]
             s["best"] = c["return_pct"] if cur is None else max(cur, c["return_pct"])
             cur = s["worst"]
