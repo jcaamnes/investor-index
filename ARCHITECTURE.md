@@ -194,7 +194,65 @@ always reports the latest *real* close date it has.
 
 ---
 
-## 7. Supporting files
+## 7. WhatsApp auto-post
+
+`push_gui.py` can post the standings + a fun one-liner to a WhatsApp group
+right after a successful push, via a checkbox on its page. It's split across
+two runtimes because the two jobs need different engines:
+
+```
+ push_gui.py  (Flask, after push_prices.py exits 0)
+      │
+      ├─ GET /api/quarters, /api/dashboard   ← same live server, fresh numbers
+      │        │
+      │        ▼
+      │  whatsapp_caption.build_caption()    ← Python, one rule-based sentence
+      │
+      ├─ node whatsapp/screenshot.js <url> <out.png>
+      │        (Puppeteer, phone-width viewport, screenshots #standingsPanel)
+      │
+      └─ node whatsapp/send_update.js <out.png> "<caption>\n\n<url>"
+               (whatsapp-web.js, cached session + group id)
+```
+
+- **`whatsapp_caption.py`** — a short, single-sentence generator, deliberately
+  separate from `summaries.py`'s longer weekly narrative. It reads the same
+  `/api/dashboard` fields (`competitors[].return_pct`, `rank_change_7d`,
+  `lead_streak`, `awards.most_risky`, …) but picks one punchy line instead of
+  a paragraph, regenerated fresh on every push rather than once per ISO week.
+- **`whatsapp/screenshot.js`** — plain Puppeteer (no WhatsApp involved).
+  Renders the *live* site at a ~430px viewport and screenshots
+  `#standingsPanel` (the id `templates/index.html` gives the "The Standings"
+  section). At that width the site's own `@media(max-width:640px)` rules
+  already drop the columns that don't fit a phone (Buy/Last/Gap/Days#1/Vol),
+  so the screenshot is mobile-friendly for free — no separate cropping logic.
+- **`whatsapp/setup.js`** — interactive, one-time. Shows a QR code
+  (`whatsapp_login.command` is the double-click launcher), joins the group
+  from `push_config.json`'s `whatsapp.group_invite` link, and caches the
+  resolved group id in `whatsapp/state.json`.
+- **`whatsapp/send_update.js`** — headless. Reuses the session `setup.js`
+  created (`whatsapp/.wwebjs_auth/`, via `whatsapp-web.js`'s `LocalAuth`) and
+  the cached group id, so no QR code or human interaction is needed on a
+  normal push.
+- All three Node scripts launch Chromium via Puppeteer's `channel: "chrome"`
+  option — i.e. your already-installed Google Chrome — rather than
+  downloading a separate Chromium binary. That download comes from a Google
+  CDN that isn't reliably reachable from every network, and reusing Chrome
+  avoids it entirely.
+- `push_gui.py`'s `/stream` route treats this as strictly best-effort and
+  strictly after: it only runs when `push_prices.py` exits 0, and its output
+  lines (`OK …` / `FAIL …`) are folded into the same log stream the price
+  push already writes, so a WhatsApp failure never hides whether the price
+  push itself succeeded.
+- Nothing here touches the database or the deployed server's code — it's
+  pure client-side automation sitting next to `push_prices.py`, using the
+  same public read API (`/api/quarters`, `/api/dashboard`) the dashboard's
+  own JavaScript uses.
+
+**Requires a deploy**: `#standingsPanel` only exists once the
+`templates/index.html` change is live on the deployed site — see `DEPLOY.md`.
+
+## 8. Supporting files
 
 - **`seed.py`** — one-time loader for the demo quarter (Q2 2026) plus an initial
   price fetch. Run once on a fresh database.
@@ -208,7 +266,7 @@ always reports the latest *real* close date it has.
 
 ---
 
-## 8. Running it locally
+## 9. Running it locally
 
 ```bash
 pip install -r requirements.txt
@@ -222,7 +280,7 @@ Yahoo will serve instead.
 
 ---
 
-## 9. How to make a change safely
+## 10. How to make a change safely
 
 - **Front-end (the page):** edit `templates/index.html`. Remember the two render
   paths — test that a change works both with the live server and with the

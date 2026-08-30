@@ -12,6 +12,7 @@ Run it by double-clicking push_gui.command, or:  python push_gui.py
 
 import json
 import os
+import shutil
 import socket
 import ssl
 import subprocess
@@ -21,6 +22,8 @@ import urllib.request
 import webbrowser
 
 from flask import Flask, Response, jsonify, request
+
+import whatsapp_caption
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,6 +57,19 @@ if not URL or not PASSWORD:
     )
 VENV_PY = os.path.join(HERE, ".venv", "bin", "python")
 PYTHON = VENV_PY if os.path.exists(VENV_PY) else sys.executable
+
+# --- WhatsApp auto-post (optional) ------------------------------------------
+# Posts the standings screenshot + a fun one-liner to a WhatsApp group after
+# each successful push. Needs a one-time login (see whatsapp_login.command)
+# and a "whatsapp" block in push_config.json, e.g.:
+#   {"whatsapp": {"enabled": true, "group_invite": "https://chat.whatsapp.com/..."}}
+_wa_cfg = _cfg.get("whatsapp") or {}
+WHATSAPP_DIR = os.path.join(HERE, "whatsapp")
+WHATSAPP_SCREENSHOT = os.path.join(WHATSAPP_DIR, "last_screenshot.png")
+WHATSAPP_GROUP_INVITE = _wa_cfg.get("group_invite", "")
+WHATSAPP_DEFAULT_ON = bool(_wa_cfg.get("enabled", True)) and bool(WHATSAPP_GROUP_INVITE)
+WHATSAPP_CONFIGURED = bool(WHATSAPP_GROUP_INVITE) and os.path.isdir(WHATSAPP_DIR)
+NODE = shutil.which("node") or "node"
 
 app = Flask(__name__)
 
@@ -119,7 +135,7 @@ pre#log{background:var(--surface-2);border:1px solid var(--border);border-radius
 <body>
 <div class="topbar"><div class="topbar-inner">
   <div class="brand">
-    <span class="mark">Investor <em>Index</em></span>
+    <span class="mark">Stocks <em>Elite</em></span>
     <span class="sub">Price Updater</span>
   </div>
   <span class="spacer"></span>
@@ -136,7 +152,12 @@ pre#log{background:var(--surface-2);border:1px solid var(--border);border-radius
         <label for="qsel">Quarter</label>
         <select id="qsel"><option value="">Active quarter</option></select>
       </div>
+      <label class="field-q" id="waWrap" style="display:none">
+        <input type="checkbox" id="waChk">
+        <span style="font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)">Post to WhatsApp</span>
+      </label>
       <button class="btn" id="go" onclick="run()">Update Prices</button>
+      <button class="btn" id="waGo" onclick="runWhatsAppOnly()" style="display:none">Post to WhatsApp Now</button>
       <span class="status" id="status">Ready.</span>
     </div>
     <pre id="log"><span class="muted">Click “Update Prices” to fetch today’s closes and push them up.</span></pre>
@@ -148,6 +169,19 @@ const log = document.getElementById('log');
 const btn = document.getElementById('go');
 const status = document.getElementById('status');
 const qsel = document.getElementById('qsel');
+const waWrap = document.getElementById('waWrap');
+const waChk = document.getElementById('waChk');
+const waGo = document.getElementById('waGo');
+// Show/pre-check the WhatsApp toggle only if it's configured server-side.
+(async function loadWA(){
+  try{
+    const r = await fetch('/whatsapp_status'); const d = await r.json();
+    if(d.configured){
+      waWrap.style.display='flex'; waChk.checked = !!d.default_enabled;
+      waGo.style.display='inline-block';
+    }
+  }catch(e){ /* leave hidden */ }
+})();
 // Populate the quarter dropdown from the live server.
 (async function loadQuarters(){
   try{
@@ -166,21 +200,22 @@ function add(line){
   let cls='', t=line.trim();
   if(t.startsWith('OK')) cls='ok';
   else if(t.startsWith('FAIL')) cls='fail';
-  else if(t.startsWith('Quarter')||t.startsWith('Pushed')) cls='head';
+  else if(t.startsWith('Quarter')||t.startsWith('Pushed')||t.startsWith('Posting')||t.startsWith('Caption')) cls='head';
   const span=document.createElement('span');
   if(cls) span.className=cls;
   span.textContent=line+"\\n";
   log.appendChild(span); log.scrollTop=log.scrollHeight;
 }
 function run(){
-  btn.disabled=true; btn.textContent='Updating…';
+  btn.disabled=true; btn.textContent='Updating…'; waGo.disabled=true;
   status.textContent='Working…'; status.style.color='var(--gold)';
   log.textContent='';
   let ok=0, fail=0;
-  const es=new EventSource('/stream?q='+encodeURIComponent(qsel.value));
+  const wa=(waWrap.style.display!=='none' && waChk.checked) ? '1' : '0';
+  const es=new EventSource('/stream?q='+encodeURIComponent(qsel.value)+'&wa='+wa);
   es.onmessage=(e)=>{
     if(e.data==='__DONE__'){ es.close();
-      btn.disabled=false; btn.textContent='Update Prices';
+      btn.disabled=false; btn.textContent='Update Prices'; waGo.disabled=false;
       status.textContent='Done · '+ok+' ok · '+fail+' failed';
       status.style.color='var(--pos)'; return; }
     const t=e.data.trim();
@@ -188,7 +223,30 @@ function run(){
     if(ok||fail) status.textContent=ok+' ok · '+fail+' failed';
     add(e.data);
   };
-  es.onerror=()=>{ es.close(); btn.disabled=false; btn.textContent='Update Prices';
+  es.onerror=()=>{ es.close(); btn.disabled=false; btn.textContent='Update Prices'; waGo.disabled=false;
+    status.textContent='Connection ended'; status.style.color='var(--neg)'; };
+}
+// Stand-alone WhatsApp post: reuses whatever prices are already live on the
+// server right now — no price push involved. Same log/status area, and
+// disables the price-push button meanwhile (both flows would otherwise
+// drive the same WhatsApp session at once).
+function runWhatsAppOnly(){
+  btn.disabled=true; waGo.disabled=true; waGo.textContent='Posting…';
+  status.textContent='Working…'; status.style.color='var(--gold)';
+  log.textContent='';
+  let ok=0, fail=0;
+  const es=new EventSource('/whatsapp_stream');
+  es.onmessage=(e)=>{
+    if(e.data==='__DONE__'){ es.close();
+      btn.disabled=false; waGo.disabled=false; waGo.textContent='Post to WhatsApp Now';
+      status.textContent='Done · '+ok+' ok · '+fail+' failed';
+      status.style.color=fail?'var(--neg)':'var(--pos)'; return; }
+    const t=e.data.trim();
+    if(t.startsWith('OK')) ok++; else if(t.startsWith('FAIL')) fail++;
+    if(ok||fail) status.textContent=ok+' ok · '+fail+' failed';
+    add(e.data);
+  };
+  es.onerror=()=>{ es.close(); btn.disabled=false; waGo.disabled=false; waGo.textContent='Post to WhatsApp Now';
     status.textContent='Connection ended'; status.style.color='var(--neg)'; };
 }
 </script></body></html>"""
@@ -210,10 +268,85 @@ def quarters():
         return jsonify({"quarters": [], "active_id": None, "error": str(exc)})
 
 
+@app.route("/whatsapp_status")
+def whatsapp_status():
+    """Tells the page whether the WhatsApp checkbox should show, and whether
+    it should default to checked."""
+    return jsonify({
+        "configured": WHATSAPP_CONFIGURED,
+        "default_enabled": WHATSAPP_DEFAULT_ON,
+    })
+
+
+def _run_node_capture(args, timeout=150):
+    """Run a whatsapp/*.js helper to completion; return (returncode, lines)."""
+    try:
+        proc = subprocess.run(
+            [NODE] + args, cwd=WHATSAPP_DIR, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, text=True, timeout=timeout,
+        )
+        return proc.returncode, [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    except FileNotFoundError:
+        return 1, ["FAIL Node.js not found on PATH — install it to use WhatsApp auto-post."]
+    except subprocess.TimeoutExpired:
+        return 1, [f"FAIL whatsapp/{args[0]} timed out after {timeout}s."]
+
+
+def _post_to_whatsapp():
+    """Fetch the just-pushed results, screenshot the standings, and send them
+    to the configured WhatsApp group. Yields plain log lines (no SSE prefix
+    — the caller adds that)."""
+    try:
+        with urllib.request.urlopen(f"{URL.rstrip('/')}/api/quarters",
+                                    timeout=30, context=_SSL_CTX) as resp:
+            qmeta = json.loads(resp.read().decode("utf-8"))
+        qid = qmeta.get("active_id")
+        if not qid:
+            yield "FAIL WhatsApp: no active quarter on the server."
+            return
+        with urllib.request.urlopen(
+                f"{URL.rstrip('/')}/api/dashboard?quarter_id={qid}",
+                timeout=30, context=_SSL_CTX) as resp:
+            dashboard = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        yield f"FAIL WhatsApp: could not fetch results ({exc})"
+        return
+
+    caption = whatsapp_caption.build_caption(dashboard)
+    yield f"Caption: {caption}"
+
+    rc, lines = _run_node_capture(["screenshot.js", URL, WHATSAPP_SCREENSHOT])
+    yield from lines
+    if rc != 0:
+        yield "FAIL WhatsApp: screenshot failed — not sending."
+        return
+
+    full_caption = f"{caption}\n\n{URL}"
+    rc, lines = _run_node_capture(
+        ["send_update.js", WHATSAPP_SCREENSHOT, full_caption], timeout=180)
+    yield from lines
+
+
+@app.route("/whatsapp_stream")
+def whatsapp_stream():
+    """Stand-alone WhatsApp post — screenshots + sends whatever is already
+    live on the server right now. Doesn't touch push_prices.py at all."""
+    def gen():
+        if not WHATSAPP_CONFIGURED:
+            yield "data: FAIL WhatsApp: not configured (see push_config.json).\n\n"
+            yield "data: __DONE__\n\n"
+            return
+        for ln in _post_to_whatsapp():
+            yield f"data: {ln}\n\n"
+        yield "data: __DONE__\n\n"
+    return Response(gen(), mimetype="text/event-stream")
+
+
 @app.route("/stream")
 def stream():
     # Translate the dropdown choice into a push_prices flag.
     q = (request.args.get("q") or "").strip()
+    wa_requested = (request.args.get("wa") or "0") == "1"
     extra = []
     if q == "all":
         extra = ["--all"]
@@ -229,6 +362,12 @@ def stream():
         for ln in proc.stdout:
             yield f"data: {ln.rstrip(chr(10))}\n\n"
         proc.wait()
+
+        if proc.returncode == 0 and wa_requested and WHATSAPP_CONFIGURED:
+            yield "data: Posting to WhatsApp…\n\n"
+            for ln in _post_to_whatsapp():
+                yield f"data: {ln}\n\n"
+
         yield "data: __DONE__\n\n"
     return Response(gen(), mimetype="text/event-stream")
 

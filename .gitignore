@@ -21,3 +21,10 @@ push_config.json
 
 # OS
 .DS_Store
+
+# WhatsApp auto-post — local session/state and generated screenshot, never commit
+whatsapp/node_modules/
+whatsapp/.wwebjs_auth/
+whatsapp/.wwebjs_cache/
+whatsapp/state.json
+whatsapp/last_screenshot.png

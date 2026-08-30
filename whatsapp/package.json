@@ -1,0 +1,11 @@
+{
+  "name": "stocks-elite-whatsapp",
+  "private": true,
+  "version": "1.0.0",
+  "description": "One-time WhatsApp login (setup.js) plus headless helpers (screenshot.js, send_update.js) that push_gui.py shells out to for posting the standings screenshot to the group chat.",
+  "dependencies": {
+    "puppeteer": "^23.9.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

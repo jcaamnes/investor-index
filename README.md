@@ -89,6 +89,44 @@ own prices. Instead `push_prices.py` runs on your machine, fetches the active
 quarter's closes, and POSTs them to the live site's `/api/prices` endpoint. See
 `DEPLOY.md`.
 
+## Posting updates to WhatsApp
+
+`push_gui.py` (the local "Update Prices" button) can also post a screenshot of
+the standings, with a fun one-line caption, to a WhatsApp group — right after
+each successful push.
+
+**One-time setup:**
+
+1. Add a `"whatsapp"` block to `push_config.json` (gitignored, same file as
+   `url`/`password`):
+   ```json
+   {"whatsapp": {"enabled": true, "group_invite": "https://chat.whatsapp.com/XXXX"}}
+   ```
+2. Make sure Google Chrome is installed (the scripts drive your existing Chrome
+   rather than downloading a separate copy of Chromium).
+3. Double-click `whatsapp_login.command`. It installs the Node dependencies
+   (one-time, needs internet) and shows a QR code — scan it with WhatsApp on
+   your phone (**Settings > Linked Devices > Link a Device**). This joins the
+   group from the invite link and saves a local session, so you won't need to
+   scan again unless you unlink the device on your phone.
+4. **Deploy the `templates/index.html` change that ships with this feature**
+   (adds `id="standingsPanel"` to the standings section) to the live site —
+   the screenshot script looks for that id. Until it's deployed, WhatsApp
+   posting will fail with "Could not find #standingsPanel on the page."
+
+After that, `push_gui.py`'s page shows a "Post to WhatsApp" checkbox
+(pre-checked once configured). Each run: fetches the fresh `/api/dashboard`
+results, builds a one-liner (`whatsapp_caption.py` — separate from
+`summaries.py`'s longer on-site weekly dispatch), screenshots the standings
+panel at a phone-width viewport (the site's own responsive CSS already trims
+it to the mobile-friendly columns), and sends image + caption to the group.
+
+Implementation lives in `whatsapp/` (`setup.js` = one-time login,
+`screenshot.js` = renders the panel, `send_update.js` = headless send — all
+via `whatsapp-web.js`/Puppeteer). Nothing there is committed except the
+scripts themselves; the session, cached group id, and generated screenshot
+are all gitignored.
+
 ## Tests
 
 ```bash
@@ -113,4 +151,8 @@ templates/        index.html (dashboard), admin.html (control room)
 static/           css/style.css, js/app.js, js/admin.js, photos/ (uploads)
 render.yaml       Render Blueprint (web service + persistent disk)
 Procfile          production server command (gunicorn)
+push_gui.py       local GUI: update prices + optional WhatsApp auto-post
+whatsapp_caption.py  one-liner generator for the WhatsApp caption
+whatsapp/         setup.js / screenshot.js / send_update.js (Node, whatsapp-web.js)
+whatsapp_login.command  one-time WhatsApp QR login launcher
 ```
